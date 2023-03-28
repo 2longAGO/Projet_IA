@@ -20,9 +20,9 @@
 Requires Python 3.8 or older 
 
 ### Important commands
-python path/to/projet.py 
--x is for the path to the track file
--s is for the path to the server file (DO NOT USE if a server instance already active)
+* python path/to/projet.py 
+  * -x is for the path to the track file
+  * -s is for the path to the server file (DO NOT USE if a server instance already active)
 
 ## Troubleshooting 
 * If the server is closed before the client make sure to force shutdown carla background processes in task manager
