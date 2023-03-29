@@ -189,7 +189,9 @@ def delete_multiple_lines(n=1):
 
 def init_scene(args):
     if args.server_path is not None:
-        subprocess.Popen(args.server_path)
+        # args for lower gpu load: -quality-level=Low 
+        # -vulkan or -opengl
+        subprocess.Popen(f'{args.server_path}')
     try:
         client = carla.Client(args.host, args.port)
         client.set_timeout(20.0)
@@ -294,6 +296,14 @@ def loop(args):
                     if event.key == K_ESCAPE:
                         pygame.quit()        
                         sys.exit()
+                    elif event.key == K_1:
+                        settings = sim_world.get_settings()
+                        settings.no_rendering_mode = True
+                        sim_world.apply_settings(settings)
+                    elif event.key == K_2:
+                        settings = sim_world.get_settings()
+                        settings.no_rendering_mode = False
+                        sim_world.apply_settings(settings)
             # get sensor data
             #vehicle.get_acceleration()
             #vehicle.get_velocity()
