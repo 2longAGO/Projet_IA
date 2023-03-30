@@ -1,0 +1,14 @@
+composition, interactions, déroulement, résolution de problèmes de toute nature et tout élément pertinent sur le travail d’équipe. 
+Pour l’option 2, la conception doit être présentée clairement Pour la partie le codage remettre les codes sources, compilés avec une documentation d’utilisation. Rajouter au  fichier Word (conception)   les résultats des tests. Pour chaque option une liste de références est nécessaire avec des citations au niveau du texte et l’intégration à la liste à présenter a la fin du document. Le rapport doit être bien structuré avec des titres significatifs et des illustrations incluant des captures écran. Le rapport ne doit pas dépasser 15 pages pour les deux options et au besoin utiliser une annexe pour le code ou les illustrations
+
+Le projet utilise CARLA comme environnement pour l'agent.
+
+Initialement on pensait que l'interaction avec le serveur serait simple.
+
+Le premier problème rencontré avait avoir avec l'utilisation de CARLA parce que customiser les cartes sur lesquelles faire pratiquer notre agent n'était pas simple.
+
+Notre solution est un mélange de cartes généré par l'entremise du standard openDRIVE et l'utiliation des cartes par défaut pour la validation de l'apprentissage.
+
+L'implantation d'un agent apprenant dans CARLA est complexe à cause de la difficulté qui existe à rendre les données du simulateur compatible avec un agent créé avec notre module de machine learning de choix (PyTorch).
+
+Notre solution tentative implique utiliser le module gymnasium comme wrapper pour les données liés au simulateur et en suite les passer au code d'apprentissage.
