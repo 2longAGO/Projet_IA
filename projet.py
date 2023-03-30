@@ -38,6 +38,7 @@ from pygame.locals import*
 actor_list = []  
 SENSOR_HISTORY_BUFFER = 1000
 
+v_kmh = lambda v: (3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
 class GenericSensor(object):
     def __init__(self, parent_actor):
@@ -48,7 +49,7 @@ class GenericSensor(object):
     def get_history(self):
         history = collections.defaultdict(int)
         for frame, data in self.history:
-            history[frame] += intensity
+            history[frame] += data
         return history
     
     def append_history(self,data:tuple):
@@ -308,7 +309,6 @@ def loop(args):
             #vehicle.get_acceleration()
             #vehicle.get_velocity()
             # get speed in km/h
-            v_kmh = lambda v: (3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
             formatted_vec3d = lambda vec: 'Vector3d(x: {:2.3f} y: {:2.2f} z: {:2.3f})'.format(vec.x,vec.y,vec.z)
             # now print the text
             text_surface = font.render(f"speed: {'{:3.2f}'.format(v_kmh(vehicle.get_velocity()))} | {formatted_vec3d(vehicle.get_velocity())}", True, (255,255,255))
