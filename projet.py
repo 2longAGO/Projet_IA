@@ -4,6 +4,10 @@ When closing close the client first!!!
 AFTER you can close the server if you please
 """
 
+#===================================
+# Obsolete
+#===================================
+
 
 import glob
 import os

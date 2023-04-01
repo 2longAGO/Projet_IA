@@ -12,3 +12,13 @@ Notre solution est un mélange de cartes généré par l'entremise du standard o
 L'implantation d'un agent apprenant dans CARLA est complexe à cause de la difficulté qui existe à rendre les données du simulateur compatible avec un agent créé avec notre module de machine learning de choix (PyTorch).
 
 Notre solution tentative implique utiliser le module gymnasium comme wrapper pour les données liés au simulateur et en suite les passer au code d'apprentissage.
+
+Je comptais utiliser le lidar pour obtenir la distance vers les obstacles mais le fait qu'il doit tourner pour avoir une bonne détection des alentours veux dire qu'il est plus difficile pour l'agent de faire du sens de ses données si elle sont réduites en une distance relative.
+
+Les problemes rencontrés avec le radar ont principalement a voir avec bien définir ou il pointe ce qui à demandé l'ajout d'un outil pour visionné ce qui voit le véhicule.
+
+Tester les capteurs de l'agent c'est fait à l'aide de code pour pourvoir observer ou le radar pointe et les données qu'il retourne.
+
+Ces données sont aussi présenté dans le dashboard de l'enviromment qui l'affiche sous forme de carte top down avec les lignes généré par le radar.
+
+Compte-tenu que notre but est seulemen de faire l'évitement d'autre capteurs ne sont pas nécessaires
