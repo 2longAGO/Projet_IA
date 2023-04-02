@@ -22,3 +22,18 @@ Tester les capteurs de l'agent c'est fait à l'aide de code pour pourvoir observ
 Ces données sont aussi présenté dans le dashboard de l'enviromment qui l'affiche sous forme de carte top down avec les lignes généré par le radar.
 
 Compte-tenu que notre but est seulemen de faire l'évitement d'autre capteurs ne sont pas nécessaires
+
+Je suis retourné au capteur liDAR parce qu'il offre une meilleur précision dans ces observations
+Ses données sont transformé en un liste de points boolean qui représente true si il n'y a rien et false si il y a un obstacle
+
+
+Comme il est très difficile pour moi de voir comment discretisé l'état de ma simulation, j'ai décidé d'utiliser une version de deep learning pour le moment.
+Deep q learning fait l'affaire parce que discretisé les actions possibles est très simple.
+
+04-01 Mon problème actuel est de faire fonctionné ensemble toute les couches de mon réseau neuronal.
+Solutions tentatives:
+Changer les couches précédents la couche problématique (ceci requiert modifier les données entrants de mon réseaux)
+Faire plus de modification intermédiaires sur les données
+Le but du réseau est de finir avec une valeur entière entre 0 et 4
+
+le fichier test contient l'implantation de deep q learning la plus à jour

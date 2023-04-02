@@ -40,11 +40,9 @@ def loop(args):
     env.reset()
     test = True
     while True:
-        #if test:
-        #    env.render()
-        #    test=False
-        #pass
         env.render()
+        _, reward, *_ = env.step([0,0])
+        print(reward)
     pass
 
 def main():
