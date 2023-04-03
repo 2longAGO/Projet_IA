@@ -45,3 +45,6 @@ l'optimisateur de model cause des erreurs à cause de changement de taille
 hypothesis 1 : Error related to reset causing speed too reach out of bounds speeds
 
 BATCH_SIZE must be a multiple of 508 because that is th return size of the neural net
+
+Nous avons décidé d'utiliser f1tenth pour simplifier la portion environnemnt du projet 
+Les  observations et actions sont à peu près identiques à l'ancien environnement lidar pour la vue du circuit et la vitesse du véhicule et les action sont 2 plage de valeurs flottantes qui représente la pédal de gas et de freinage.
