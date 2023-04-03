@@ -42,5 +42,6 @@ Il y a beaucoup de nombres a ajusté et beaucoup de modifications à faire dans 
 
 Known issues:
 l'optimisateur de model cause des erreurs à cause de changement de taille
+hypothesis 1 : Error related to reset causing speed too reach out of bounds speeds
 
 BATCH_SIZE must be a multiple of 508 because that is th return size of the neural net

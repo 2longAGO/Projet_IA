@@ -51,6 +51,7 @@ import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 
+import time
 import argparse
 import logging
 import numpy as np
@@ -249,14 +250,14 @@ class DQN(nn.Module):
         #self.flatten1 = nn.Flatten(self.n_action, 1)
 
     def forward(self, x):
-        print(x.size())
+        #print(x.size())
         h = F.relu(self.conv1(x))
         h = F.relu(self.conv2(h))
         h = F.relu(self.conv3(h))
 
-        print(h.size())
+        #print(h.size())
         #print(h.view(h.size(0), -1).size())
-        j = torch.transpose(h,0,1)
+        j = torch.transpose(h,0,1) # swap the 2 axis to make the data compatible with the next layer
         # print(j.view(j.size(0), -1))
         #j = torch.reshape(j,(j.size(0), 508))
 
@@ -468,6 +469,8 @@ def loop(args):
         # Initialize the environment and get it's state
         state, info = env.reset()
         env.render()
+        #print(i_episode)
+        #end_time = time.monotonic() + 20
         #print(state,type(state))
         state = torch.tensor(np.append(state["obstacles"],[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
         #state = torch.tensor(np.append(np.delete(state["obstacles"],[-1,-2],None),[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
@@ -476,6 +479,7 @@ def loop(args):
             action = select_action(state)
             #print(action.item())
             observation, reward, terminated, truncated, _ = env.step(action.item())
+            #print(len(observation["obstacles"]),observation["speed"],observation["distTarget"])
             reward = torch.tensor([reward], device=device)
             done = terminated or truncated
 
@@ -504,6 +508,7 @@ def loop(args):
             target_net.load_state_dict(target_net_state_dict)
 
             if done:
+                print(terminated)
                 episode_durations.append(t + 1)
                 plot_durations()
                 break

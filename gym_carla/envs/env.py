@@ -487,6 +487,8 @@ class CarlaAvoidanceEnv(gym.Env):
         super().reset(seed=seed)
         
         self.init_scene()
+        while v_kmh(self.vehicle.get_acceleration()) > 10 :
+            self.init_scene()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -500,10 +502,6 @@ class CarlaAvoidanceEnv(gym.Env):
          # Do a soft reset (teleport vehicle)
         control = carla.VehicleControl(steer=float(0.0),throttle=float(0.0),brake=float(0.0))
         self.vehicle.apply_control(control)
-        #self.vehicle.tick()
-        self.colSensor.history.clear()
-        self.lSensor.history.clear()
-        self.rSensor.history.clear()
         
         # Generate waypoints along the lap
         self._agent_location, self._target_location = [self.world.get_map().get_waypoint(spawn.location).transform for spawn in np.random.choice(self.world.get_map().get_spawn_points(), 2, replace=False)]
@@ -511,6 +509,11 @@ class CarlaAvoidanceEnv(gym.Env):
         #(TO-DO) Add check for car acceleration on reset to make sure it is set in place and the physics didn't go haywire
         self.vehicle.set_simulate_physics(False) # Reset the car's physics
         self.vehicle.set_simulate_physics(True)
+
+        #self.vehicle.tick()
+        self.colSensor.history.clear()
+        self.lSensor.history.clear()
+        self.rSensor.history.clear()
 
         # Give 2 seconds to reset
         if self.sync:
@@ -671,7 +674,7 @@ class CarlaAvoidanceEnv(gym.Env):
         self.screen.blit(self.rSensor.get_radar_image(rotation=math.radians(self.vehicle.get_transform().rotation.yaw)),(0,20))
         self.screen.blit(pygame.surfarray.make_surface(self.lSensor.get_lidar_image(window_size=self.window_size)),(0,0))
         self.screen.blit(text_surface, (0,0))
-        pygame.display.update()
+        #pygame.display.update()
         return np.array(pygame.surfarray.array3d(self.screen), dtype=np.uint8).transpose([1, 0, 2])
 
 # %%
