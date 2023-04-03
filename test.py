@@ -244,23 +244,25 @@ class DQN(nn.Module):
         self.conv1 = nn.Conv1d(1, 32, kernel_size=8, stride=4, padding=0)  # (In Channel, Out Channel, ...)
         self.conv2 = nn.Conv1d(32, 64, kernel_size=4, stride=2, padding=0)
         self.conv3 = nn.Conv1d(64, 64, kernel_size=3, stride=1, padding=0)
-
         self.affine1 = nn.Linear(64, 508)
         self.affine2 = nn.Linear(508, self.n_action)
+        #self.flatten1 = nn.Flatten(self.n_action, 1)
 
     def forward(self, x):
+        print(x.size())
         h = F.relu(self.conv1(x))
         h = F.relu(self.conv2(h))
         h = F.relu(self.conv3(h))
 
         print(h.size())
-        print(h.view(h.size(0), -1).size())
+        #print(h.view(h.size(0), -1).size())
         j = torch.transpose(h,0,1)
-        print(j.view(j.size(0), -1).size())
-        #.view(h.size(0), -1)
-        #torch.transpose(h,0,1))
+        # print(j.view(j.size(0), -1))
+        #j = torch.reshape(j,(j.size(0), 508))
+
+        #h = F.relu(self.affine1(torch.transpose(h.view(h.size(0), -1),0,1)))
         h = F.relu(self.affine1(j.view(j.size(0), -1)))
-        h = self.affine2(h)
+        h = F.relu(self.affine2(h))
         return h
 
 
@@ -293,7 +295,7 @@ class DQN(nn.Module):
 # EPS_DECAY controls the rate of exponential decay of epsilon, higher means a slower decay
 # TAU is the update rate of the target network
 # LR is the learning rate of the AdamW optimizer
-BATCH_SIZE = 128
+BATCH_SIZE = 127
 GAMMA = 0.99
 EPS_START = 0.9
 EPS_END = 0.05
@@ -329,7 +331,9 @@ def select_action(state):
             # t.max(1) will return the largest column value of each row.
             # second column on max result is index of where max element was
             # found, so we pick action with the larger expected reward.
-            return policy_net(state.float()).max(1)[1].view(1, 1)
+            #print(policy_net(state.float()).max(1))
+
+            return torch.max(policy_net(state.float()).max(1)[1]) #.view(1, 1)
     else:
         return torch.tensor([[env.action_space.sample()]], device=device, dtype=torch.long)
 
@@ -395,14 +399,24 @@ def optimize_model():
                                           batch.next_state)), device=device, dtype=torch.bool)
     non_final_next_states = torch.cat([s for s in batch.next_state
                                                 if s is not None])
+    
+    #for act in batch.action :
+    #    print(act.shape == (1,1))
+    #print(batch.action)
+    #print((act if act.shape == (1,1) else torch.reshape(act,(1,1)) for act in batch.action))
+    #batch.action = tuple([act if act.shape == (1,1) else torch.reshape(act,(1,1)) for act in batch.action])
+    #batch.action = filter(lambda x: x.shape == (1,1), batch.action)
     state_batch = torch.cat(batch.state)
-    action_batch = torch.cat(batch.action)
+    action_batch = torch.cat(tuple((act if act.shape == (1,1) else torch.reshape(act,(1,1)) for act in batch.action))) # batch.action
     reward_batch = torch.cat(batch.reward)
-
+    #torch.shape()
+    #state_batch.
     # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
     # columns of actions taken. These are the actions which would've been taken
     # for each batch state according to policy_net
-    state_action_values = policy_net(state_batch).gather(1, action_batch)
+    # state_batch input[1, 128, 4098]
+    # torch.mean(state_batch,0).unsqueeze(0).float().size() #torch.Size([1, 4098])
+    state_action_values = policy_net(torch.mean(state_batch,0).unsqueeze(0).float()).gather(1, action_batch) #torch.transpose(state_batch,-1,0)
 
     # Compute V(s_{t+1}) for all next states.
     # Expected values of actions for non_final_next_states are computed based
@@ -411,7 +425,9 @@ def optimize_model():
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(BATCH_SIZE, device=device)
     with torch.no_grad():
-        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0]
+        #print(torch.mean(non_final_next_states,0).unsqueeze(0).float().size())
+        #print(target_net(torch.mean(non_final_next_states,0).unsqueeze(0).float()).max(1)[0].view(-1,BATCH_SIZE))
+        next_state_values[non_final_mask] = torch.mean(target_net(torch.mean(non_final_next_states,0).unsqueeze(0).float()).max(1)[0].view(-1,BATCH_SIZE),0).float()
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
@@ -451,12 +467,14 @@ def loop(args):
     for i_episode in range(num_episodes):
         # Initialize the environment and get it's state
         state, info = env.reset()
+        env.render()
         #print(state,type(state))
         state = torch.tensor(np.append(state["obstacles"],[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
         #state = torch.tensor(np.append(np.delete(state["obstacles"],[-1,-2],None),[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
         #state = torch.from_numpy(np.append(state["obstacles"],[state["speed"],state["distTarget"]])).device(device).unsqueeze(0)
         for t in count():
             action = select_action(state)
+            #print(action.item())
             observation, reward, terminated, truncated, _ = env.step(action.item())
             reward = torch.tensor([reward], device=device)
             done = terminated or truncated

@@ -36,4 +36,11 @@ Changer les couches précédents la couche problématique (ceci requiert modifie
 Faire plus de modification intermédiaires sur les données
 Le but du réseau est de finir avec une valeur entière entre 0 et 4
 
-le fichier test contient l'implantation de deep q learning la plus à jour
+le fichier test contient l'implantation de deep q learning la plus à jour.
+
+Il y a beaucoup de nombres a ajusté et beaucoup de modifications à faire dans le code de l'agent
+
+Known issues:
+l'optimisateur de model cause des erreurs à cause de changement de taille
+
+BATCH_SIZE must be a multiple of 508 because that is th return size of the neural net

@@ -545,24 +545,22 @@ class CarlaAvoidanceEnv(gym.Env):
         # Control vehicle 
         # Continous states
         # control = carla.VehicleControl(steer=action[0],throttle=max(action[1],0),brake=-min(action[1],0))
+        # control.reverse boolean True = engaged False = disengaged
+        # control.brake float 0 to 1
 
         # Discrete states
-        if action == 0:
+        if action == 0: # forward
             self.throttle = min(self.throttle+self.ACT_AMT,1)
             self.brake = 0
-        elif action == 1: # left?
+        elif action == 1: # right?
             self.steer = self.steer + self.ACT_AMT
-        elif action == 2: # right?
+        elif action == 2: # left?
             self.steer = self.steer - self.ACT_AMT
-        elif action == 3:
+        elif action == 3: # backwards
             self.brake = min(self.throttle+self.ACT_AMT,1)
             self.throttle = 0
         self.steer = min(max(self.steer,-1),1)
         control = carla.VehicleControl(steer=self.steer,throttle=self.throttle,brake=self.brake)
-
-
-        # control.reverse boolean True = engaged False = disengaged
-        # control.brake float 0 to 1
         self.vehicle.apply_control(control)
         self._agent_location = self.vehicle.get_transform()
         reward = 0
