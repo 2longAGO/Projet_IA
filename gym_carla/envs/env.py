@@ -166,7 +166,7 @@ class CollisionSensor(GenericSensor):
         if not self:
             return
         actor_type = get_actor_display_name(event.other_actor)
-        #print('Collision with %r' % actor_type)
+        print('Collision with %r' % actor_type)
         impulse = event.normal_impulse
         intensity = math.sqrt(impulse.x**2 + impulse.y**2 + impulse.z**2)
         self.append_history((event.frame, intensity))
@@ -506,12 +506,12 @@ class CarlaAvoidanceEnv(gym.Env):
         # Generate waypoints along the lap
         self._agent_location, self._target_location = [self.world.get_map().get_waypoint(spawn.location).transform for spawn in np.random.choice(self.world.get_map().get_spawn_points(), 2, replace=False)]
         self.vehicle.set_transform(self._agent_location)
+        self.vehicle.set_target_velocity(carla.Vector3D())
+        self.vehicle.set_target_angular_velocity(carla.Vector3D())
         #(TO-DO) Add check for car acceleration on reset to make sure it is set in place and the physics didn't go haywire
         self.vehicle.set_simulate_physics(False) # Reset the car's physics
         self.vehicle.set_simulate_physics(True)
-
         #self.vehicle.tick()
-        self.colSensor.history.clear()
         self.lSensor.history.clear()
         self.rSensor.history.clear()
 
@@ -527,6 +527,8 @@ class CarlaAvoidanceEnv(gym.Env):
                     pass
         else:
             time.sleep(2.0)
+
+        self.colSensor.history.clear()
     
 # %%
 # Step
@@ -674,7 +676,7 @@ class CarlaAvoidanceEnv(gym.Env):
         self.screen.blit(self.rSensor.get_radar_image(rotation=math.radians(self.vehicle.get_transform().rotation.yaw)),(0,20))
         self.screen.blit(pygame.surfarray.make_surface(self.lSensor.get_lidar_image(window_size=self.window_size)),(0,0))
         self.screen.blit(text_surface, (0,0))
-        #pygame.display.update()
+        pygame.display.update()
         return np.array(pygame.surfarray.array3d(self.screen), dtype=np.uint8).transpose([1, 0, 2])
 
 # %%

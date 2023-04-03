@@ -468,17 +468,19 @@ def loop(args):
     for i_episode in range(num_episodes):
         # Initialize the environment and get it's state
         state, info = env.reset()
-        env.render()
         #print(i_episode)
-        #end_time = time.monotonic() + 20
+        end_time = time.monotonic() + 20
         #print(state,type(state))
         state = torch.tensor(np.append(state["obstacles"],[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
         #state = torch.tensor(np.append(np.delete(state["obstacles"],[-1,-2],None),[state["speed"],state["distTarget"]]), device=device).unsqueeze(0)
         #state = torch.from_numpy(np.append(state["obstacles"],[state["speed"],state["distTarget"]])).device(device).unsqueeze(0)
-        for t in count():
+        #for t in count():
+        t = 0
+        while time.monotonic() < end_time:
             action = select_action(state)
             #print(action.item())
             observation, reward, terminated, truncated, _ = env.step(action.item())
+            env.render()
             #print(len(observation["obstacles"]),observation["speed"],observation["distTarget"])
             reward = torch.tensor([reward], device=device)
             done = terminated or truncated
@@ -506,13 +508,13 @@ def loop(args):
             for key in policy_net_state_dict:
                 target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
             target_net.load_state_dict(target_net_state_dict)
+            t+=1
 
             if done:
-                print(terminated)
+                #print(done)
                 episode_durations.append(t + 1)
                 plot_durations()
                 break
-
     print('Complete')
     plot_durations(show_result=True)
     plt.ioff()
