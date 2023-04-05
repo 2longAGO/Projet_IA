@@ -50,9 +50,10 @@ Ajout de l'implantation de PPO implanter avec F1tenth
 
 Donner plus de temps au système pour découvrir quoi faire par épisode serait bénéfique
 
-La fonction d'update uilisé peut être améliorer avec l'usage de nn.optim
+La fonction d'update uilisé peut être améliorer avec l'usage de torch.optim
 
 documentation
+https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html?highlight=deep%20q
 https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/#sphx-glr-tutorials-gymnasium-basics-environment-creation-py
 https://pytorch.org/tutorials/intermediate/reinforcement_ppo.html
 https://github.com/bitsauce/Carla-ppo
