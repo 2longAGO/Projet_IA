@@ -67,12 +67,11 @@ def train(args):
         action_dim = env.action_space.n
 
     ###################### logging ######################
-
+    env_file = env_name.replace(':', '_',-1) ### env related pretrained model file name
     #### log files for multiple runs are NOT overwritten
     log_dir = "PPO_logs"
     if not os.path.exists(log_dir):
           os.makedirs(log_dir)
-    env_file = env_name.replace(':', '_',-1)
     log_dir = log_dir + '/' + env_file + '/'
     if not os.path.exists(log_dir):
           os.makedirs(log_dir)
