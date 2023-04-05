@@ -49,3 +49,12 @@ BATCH_SIZE must be a multiple of 508 because that is th return size of the neura
 Ajout de l'implantation de PPO implanter avec F1tenth
 
 Donner plus de temps au système pour découvrir quoi faire par épisode serait bénéfique
+
+La fonction d'update uilisé peut être améliorer avec l'usage de nn.optim
+
+documentation
+https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/#sphx-glr-tutorials-gymnasium-basics-environment-creation-py
+https://pytorch.org/tutorials/intermediate/reinforcement_ppo.html
+https://github.com/bitsauce/Carla-ppo
+https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/PPO/torch
+https://github.com/ericyangyu/PPO-for-Beginners
