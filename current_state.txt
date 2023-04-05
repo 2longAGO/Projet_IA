@@ -52,9 +52,13 @@ Les  observations et actions sont à peu près identiques à l'ancien environnem
 
 PPO implementation https://github.com/nikhilbarhate99/PPO-PyTorch/blob/master/PPO.py
 
+This PPO implementation could probably also be used in with he crla environment
+
 Le fichier train_projet est utilisé pour faire l'entrainement de l'IA
 
 Run 4: Avant l'ajout des règles de reward l'AI en 322 episodes a arrêter de bouger.
 Run 5: Ajout de la règle qui demande une certaine vitesse pour obtenir des points vitesse > 1
 Il a arrêter de bouger parce que le threshold de vitesse était trop élevé pour qu'il se rende compte du but
 Run 6: Rêgle de vitesse basé sur la multiplication de la reward par la vitesse
+    la rêgle ne discrimine pas contre le reculons
+Run 7: 
