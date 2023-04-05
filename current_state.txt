@@ -49,3 +49,12 @@ BATCH_SIZE must be a multiple of 508 because that is th return size of the neura
 
 Nous avons décidé d'utiliser f1tenth pour simplifier la portion environnemnt du projet 
 Les  observations et actions sont à peu près identiques à l'ancien environnement lidar pour la vue du circuit et la vitesse du véhicule et les action sont 2 plage de valeurs flottantes qui représente la pédal de gas et de freinage.
+
+PPO implementation https://github.com/nikhilbarhate99/PPO-PyTorch/blob/master/PPO.py
+
+Le fichier train_projet est utilisé pour faire l'entrainement de l'IA
+
+Run 4: Avant l'ajout des règles de reward l'AI en 322 episodes a arrêter de bouger.
+Run 5: Ajout de la règle qui demande une certaine vitesse pour obtenir des points vitesse > 1
+Il a arrêter de bouger parce que le threshold de vitesse était trop élevé pour qu'il se rende compte du but
+Run 6: Rêgle de vitesse basé sur la multiplication de la reward par la vitesse

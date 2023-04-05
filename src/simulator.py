@@ -50,6 +50,9 @@ def race(drivers=[DisparityExtender()],
                 futures.append(output)
         for future in futures:
             speed, steer = future.result()
+            print(speed,steer)
+            # steer  -2 to 2 
+            # speed 0 to 10
             actions.append([steer, speed])
         actions = np.array(actions)
         obs, step_reward, done, info = env.step(actions)
