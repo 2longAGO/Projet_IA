@@ -9,6 +9,7 @@
 * [Carla Quickstart](https://carla.readthedocs.io/en/latest/start_quickstart/)
 
 ## Python Dependencies
+* torch ( pip3.8 install --index-url https://download.pytorch.org/whl/cu117 )
 * numpy
 * pygame
 * carla
@@ -21,7 +22,7 @@
 Requires Python 3.8 or older 
 
 ### Important commands
-* python path/to/projet.py 
+* python path/to/train_projet.py 
   * -x is for the path to the track file
   * -s is for the path to the server file (DO NOT USE if a server instance already active)
 

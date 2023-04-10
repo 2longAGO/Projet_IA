@@ -77,6 +77,7 @@ Run 22: Speed up scan add functional scan lidar (the scan refresh rate is to slo
 Run 23: Add decay to scan data
 Run 24: decay 4x a cycle instead of once ( Result: Seems to work but has to get very close to obstacles before it does anything )
 Run 25: Expand range back to 50
+Run 26: instant reset
 Idea: modify model to add vec2d for lidar data that is then combined with the other 2 float values
          vec2d to 1x4 float + 1x2 float 
 
@@ -88,3 +89,4 @@ https://github.com/bitsauce/Carla-ppo
 https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/PPO/torch
 https://github.com/ericyangyu/PPO-for-Beginners
 https://github.com/AndersonJo/dqn-pytorch
+https://towardsdatascience.com/proximal-policy-optimization-ppo-explained-abed1952457b

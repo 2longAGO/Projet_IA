@@ -154,20 +154,17 @@ class LiDARSensor(GenericSensor):
         height = lidar_img.shape[0]//3
         cut_data = lidar_img[width-1:width+width//3,height-2:(height*2)+2]
         
-        if buffer is None:
-            buffer = np.zeros(cut_data.shape) #np.full(cut_data.shape,0.2)
+        if buffer is None or abs(angle)%45 == 0:
+            buffer = np.zeros(cut_data.shape)
         
-        #for i in 10:
         angle = self.tick-90
         y = math.trunc(cut_data.shape[0]*math.cos(angle))
         x = math.trunc(cut_data.shape[0]*math.sin(angle))
         rr, cc = line(0,cut_data.shape[1]//2,abs(x),abs(y-(cut_data.shape[1]//2)))
         buffer[rr,cc] = (0, 0, 0) if not clamp else 0
         
-        buffer = np.average(np.array([buffer,cut_data]),axis=0) if abs(angle)%45 == 0 else np.fmax(buffer,cut_data)
-        #buffer = np.fmax(buffer,cut_data)
+        buffer = np.fmax(buffer,cut_data)
         return buffer
-        #return cut_data
 
 class RadarSensor(GenericSensor):
     def __init__(self, parent_actor,transform,sensor_options):
@@ -482,7 +479,7 @@ class CarlaAvoidanceEnv(gym.Env):
             self.steer = self.steer + self.ACT_AMT
         elif action == 2: # left?
             self.steer = self.steer - self.ACT_AMT
-        elif action == 3: # backwards
+        elif action == 3: # brake
             self.brake = min(self.throttle+self.ACT_AMT,1)
             self.throttle = 0
         self.steer = min(max(self.steer,-1),1)
