@@ -1,72 +1,3 @@
-# fmt: off
-"""
-Make your own custom environment
-================================
-
-This documentation overviews creating new environments and relevant
-useful wrappers, utilities and tests included in Gymnasium designed for
-the creation of new environments. You can clone gym-examples to play
-with the code that is presented here. We recommend that you use a virtual environment:
-
-.. code:: console
-
-   git clone https://github.com/Farama-Foundation/gym-examples
-   cd gym-examples
-   python -m venv .env
-   source .env/bin/activate
-   pip install -e .
-
-Subclassing gymnasium.Env
--------------------------
-
-Before learning how to create your own environment you should check out
-`the documentation of Gymnasium’s API </api/env>`__.
-
-We will be concerned with a subset of gym-examples that looks like this:
-
-.. code:: sh
-
-   gym-examples/
-     README.md
-     setup.py
-     gym_examples/
-       __init__.py
-       envs/
-         __init__.py
-         grid_world.py
-       wrappers/
-         __init__.py
-         relative_position.py
-         reacher_weighted_reward.py
-         discrete_action.py
-         clip_reward.py
-
-To illustrate the process of subclassing ``gymnasium.Env``, we will
-implement a very simplistic game, called ``GridWorldEnv``. We will write
-the code for our custom environment in
-``gym-examples/gym_examples/envs/grid_world.py``. The environment
-consists of a 2-dimensional square grid of fixed size (specified via the
-``size`` parameter during construction). The agent can move vertically
-or horizontally between grid cells in each timestep. The goal of the
-agent is to navigate to a target on the grid that has been placed
-randomly at the beginning of the episode.
-
--  Observations provide the location of the target and agent.
--  There are 4 actions in our environment, corresponding to the
-   movements “right”, “up”, “left”, and “down”.
--  A done signal is issued as soon as the agent has navigated to the
-   grid cell where the target is located.
--  Rewards are binary and sparse, meaning that the immediate reward is
-   always zero, unless the agent has reached the target, then it is 1.
-
-An episode in this environment (with ``size=5``) might look like this:
-
-where the blue dot is the agent and the red square represents the
-target.
-
-Let us look at the source code of ``GridWorldEnv`` piece by piece:
-"""
-
 # %%
 # Declaration and Initialization
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,6 +31,7 @@ import numpy as np
 
 import pygame
 from pygame.locals import*
+from skimage.draw import line
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -173,6 +105,8 @@ class CollisionSensor(GenericSensor):
 
 
 class LiDARSensor(GenericSensor):
+    tick = 0
+    prev_frame = 0
     def __init__(self, parent_actor,transform,sensor_options):
         super().__init__(parent_actor)
         world = self._parent.get_world()
@@ -193,16 +127,17 @@ class LiDARSensor(GenericSensor):
 
     def lidar_data(weak_self, lidar_measurement):
         self = weak_self()
+        self.tick = (self.tick+1)%181
         if not self:
             return
         #print(f"lidar: {lidar_measurement.raw_data}")
-        self.append_history((lidar_measurement.frame,lidar_measurement.raw_data))
+        self.append_history((lidar_measurement.frame,lidar_measurement))
     
-    def get_lidar_image(self,window_size=512,range=50,clamp=False):
+    def get_lidar_image(self,window_size=512,ld_range=50,clamp=False,buffer=None):
         disp_size = [window_size,window_size]
-        lidar_range = 2.0*float(range)
+        lidar_range = 2.0*float(ld_range)
         data = self.get_latest()[1]
-        points = np.frombuffer(data, dtype=np.dtype('f4'))
+        points = np.frombuffer(data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (int(points.shape[0] / 4), 4))
         lidar_data = np.array(points[:, :2])
         lidar_data *= min(disp_size) / lidar_range
@@ -213,7 +148,26 @@ class LiDARSensor(GenericSensor):
         lidar_img_size = (disp_size[0], disp_size[1], 3) if not clamp else (disp_size[0], disp_size[1],1)
         lidar_img = np.zeros((lidar_img_size), dtype=np.uint8)
         lidar_img[tuple(lidar_data.T)] = (255, 255, 255) if not clamp else 1
-        return lidar_img
+        # get center height + and minus a certain amount 
+        # witdh + a certaim amount
+        width = lidar_img.shape[1]//2
+        height = lidar_img.shape[0]//3
+        cut_data = lidar_img[width-1:width+width//3,height-2:(height*2)+2]
+        
+        if buffer is None:
+            buffer = np.zeros(cut_data.shape) #np.full(cut_data.shape,0.2)
+        
+        #for i in 10:
+        angle = self.tick-90
+        y = math.trunc(cut_data.shape[0]*math.cos(angle))
+        x = math.trunc(cut_data.shape[0]*math.sin(angle))
+        rr, cc = line(0,cut_data.shape[1]//2,abs(x),abs(y-(cut_data.shape[1]//2)))
+        buffer[rr,cc] = (0, 0, 0) if not clamp else 0
+        
+        buffer = np.average(np.array([buffer,cut_data]),axis=0) if abs(angle)%45 == 0 else np.fmax(buffer,cut_data)
+        #buffer = np.fmax(buffer,cut_data)
+        return buffer
+        #return cut_data
 
 class RadarSensor(GenericSensor):
     def __init__(self, parent_actor,transform,sensor_options):
@@ -235,48 +189,11 @@ class RadarSensor(GenericSensor):
         #print('Collision with %r' % radar_data)
         self.append_history((radar_data.frame,radar_data))
     # (TO-DO) make better get_radar_image function
-    def get_radar_image(self,window_size=512,rotation=math.pi):
+    def get_radar_image(self,size=64,range=10):
         radar_data = self.get_latest()[1]
-        velocity_range = 7.5
-        #points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
-        #points = np.reshape(points, (len(radar_data), 4))
-        #print(points)
-        """
-        carla.Transform(
-            carla.Location(),
-            carla.Rotation(
-                pitch=current_rot.pitch + alt,
-                yaw=current_rot.yaw + azi,
-                roll=current_rot.roll)).transform(fw_vec)
-        """
-        disp = pygame.Surface((window_size,window_size-20))
-        center = (window_size/2,(window_size-20)/2)
-        lines = []
-        for data in radar_data:
-            azi = math.degrees(data.azimuth)
-            alt = math.degrees(data.altitude)
-            # The 0.25 adjusts a bit the distance so the dots can
-            # be properly seen
-            fw_vec = carla.Vector3D(x=data.depth - 0.25)
-            def clamp(min_v, max_v, value):
-                return max(min_v, min(value, max_v))
-            norm_velocity = data.velocity / velocity_range # range [-1, 1]
-            r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
-            g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
-            b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
-            vec = pygame.math.Vector3(radar_data.transform.location.x + fw_vec.x,radar_data.transform.location.y + fw_vec.y,radar_data.transform.location.z + fw_vec.z).normalize()
-            #vec_data = pygame.math.Vector3.from_spherical((data.depth,data.altitude,data.azimuth+rotation))
-            lines.append(center)
-            #disp.set_at((int(vec_data.x+center[0]*3),int(vec_data.z+center[1]*3)), (255,255,255))
-            #lines.append(((vec_data.x+center[0])*1.8,(vec_data.z+center[1])*1.8))
-            disp.set_at((int((vec.x+center[0])*1.5),int((vec.z+center[1])*1.5)), (r,g,b))
-            #lines.append(((fw_vec.x+center[0])*1.5,(fw_vec.z+center[1])*1.5))
-        #if len(lines) > 1 :
-        #    pygame.draw.aalines(disp,(255,255,255),False,lines)
-
-        current_rot = radar_data.transform.rotation
-        #print(len(radar_data))
-        return disp
+        points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
+        points = np.reshape(points, (len(radar_data), 4))
+        return np.pad(points[:, 3],(0,size-len(radar_data)), 'constant',constant_values=(0, range))
 
 
 def clear_actors(to_destroy_list):
@@ -290,6 +207,9 @@ class CarlaAvoidanceEnv(gym.Env):
     actor_list = []
     world = None
     process = None
+    buffer = None
+    buffer_obs = None
+    ticks = 0
     def __init__(self, args, render_mode=None, nbObstacles=2):
         self.window_size = 512  # The size of the PyGame window
         self.nbObstacles = nbObstacles
@@ -367,10 +287,10 @@ class CarlaAvoidanceEnv(gym.Env):
             self.actor_list.append(self.colSensor)
             #obSensor = ObstacleSensor(self.vehicle)
             #self.actor_list.append(obSensor)
-            sensor_points_per_second = '100000'
+            sensor_points_per_second = '100000' #0000
             self.channels = 64
             self.range = 10
-            self.lSensor = LiDARSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4)), {'channels' : f'{self.channels}', 'range' : f'{self.range}', 'points_per_second': sensor_points_per_second, 'rotation_frequency': '20'})
+            self.lSensor = LiDARSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4)), {'channels' : f'{self.channels}', 'range' : f'{self.range}', 'horizontal_fov': '180', 'points_per_second': sensor_points_per_second, 'rotation_frequency': '20'})
             self.actor_list.append(self.lSensor)
             self.rSensor = RadarSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(pitch=0, yaw=0)), {'points_per_second': sensor_points_per_second,'vertical_fov': str(20), 'horizontal_fov': str(70),'range' : str(self.range)})
             self.actor_list.append(self.rSensor)
@@ -437,11 +357,10 @@ class CarlaAvoidanceEnv(gym.Env):
 # ``reset`` and ``step`` separately:
 
     def _get_obs(self):
-        ldata = self.lSensor.get_lidar_image(window_size=self.img_size, range=self.range, clamp=True),
-        #ldata = [self.range]*self.channels if not isinstance(ldata, tuple) or not isinstance(ldata, list) or ldata is None else [carla.Location.distance(carla.Location(data[0],data[1],data[2])) for data in ldata[1]]
-        #ldata = [[self.range,self.range,self.range]]*self.channels if not isinstance(ldata, tuple) or not isinstance(ldata, list) or ldata is None else [[data[0],data[1],data[2]] for data in ldata[1]]
-        #rdata = [data.depth for data in self.rSensor.get_latest()[1]][:self.channels]
-        dataArr = np.array(ldata,dtype=np.float32)
+        #rdata = self.rSensor.get_radar_image()
+        self.buffer_obs = self.lSensor.get_lidar_image(window_size=self.img_size, ld_range=self.range, clamp=True, buffer=self.buffer_obs)
+        ldata = self.buffer_obs
+        dataArr = np.array(ldata,dtype=np.float32) #rdata
         dataArr = np.ndarray.flatten(dataArr)
         return {"obstacles": dataArr, "speed": v_kmh(self.vehicle.get_velocity()), "distTarget": self._agent_location.location.distance(self._target_location.location)}
 
@@ -513,6 +432,8 @@ class CarlaAvoidanceEnv(gym.Env):
         self.vehicle.set_simulate_physics(True)
         #self.vehicle.tick()
         self.lSensor.history.clear()
+        self.buffer = None
+        self.buffer_obs = None
         self.rSensor.history.clear()
 
         # Give 2 seconds to reset
@@ -572,11 +493,12 @@ class CarlaAvoidanceEnv(gym.Env):
         terminated = False
         # An episode is done if the agent has reached the target
         # terminated = np.array_equal(self._agent_location.location, self._target_location.location)
-        reward = 50 if np.array_equal(self._agent_location.location, self._target_location.location) else 0  # Binary sparse rewards
-        reward += 1 if v_kmh(self.vehicle.get_velocity()) > 50 else 0 #max(min(50-v_kmh(self.vehicle.get_velocity()),1),0)
-
+        reward += 50 if np.array_equal(self._agent_location.location, self._target_location.location) else 0  # Binary sparse rewards
+        reward += v_kmh(self.vehicle.get_velocity())/50 if v_kmh(self.vehicle.get_velocity()) < 50 else 2 #max(min(50-v_kmh(self.vehicle.get_velocity()),1),0)
+        if v_kmh(self.vehicle.get_velocity()) < 0.5 :
+            reward -= 2
         if self.colSensor.get_latest() is not None :
-            reward = -200 
+            reward -= 200
             terminated = True
         
         observation = self._get_obs()
@@ -671,10 +593,10 @@ class CarlaAvoidanceEnv(gym.Env):
         formatted_vec3d = lambda vec: 'Vector3d(x: {:2.3f} y: {:2.2f} z: {:2.3f})'.format(vec.x,vec.y,vec.z)
         # now print the text
         text_surface = self.font.render(f"speed: {'{:3.2f}'.format(v_kmh(self.vehicle.get_velocity()))} | {formatted_vec3d(self.vehicle.get_velocity())}", True, (255,255,255))
-        self.screen.fill((0,0,0))
+        self.screen.fill((125,125,125))
         self.rad_callback(self.rSensor.get_latest()[1])
-        self.screen.blit(self.rSensor.get_radar_image(rotation=math.radians(self.vehicle.get_transform().rotation.yaw)),(0,20))
-        self.screen.blit(pygame.surfarray.make_surface(self.lSensor.get_lidar_image(window_size=self.window_size)),(0,0))
+        self.buffer = self.lSensor.get_lidar_image(window_size=self.window_size,buffer=self.buffer)
+        self.screen.blit(pygame.surfarray.make_surface(self.buffer),(100,100))
         self.screen.blit(text_surface, (0,0))
         pygame.display.update()
         return np.array(pygame.surfarray.array3d(self.screen), dtype=np.uint8).transpose([1, 0, 2])
@@ -698,171 +620,3 @@ class CarlaAvoidanceEnv(gym.Env):
         if self.process is not None:
             self.process.terminate()
         sys.exit()
-
-
-# %%
-# In other environments ``close`` might also close files that were opened
-# or release other resources. You shouldn’t interact with the environment
-# after having called ``close``.
-
-# %%
-# Registering Envs
-# ----------------
-#
-# In order for the custom environments to be detected by Gymnasium, they
-# must be registered as follows. We will choose to put this code in
-# ``gym-examples/gym_examples/__init__.py``.
-#
-# .. code:: python
-#
-#   from gymnasium.envs.registration import register
-#
-#   register(
-#        id="gym_examples/GridWorld-v0",
-#        entry_point="gym_examples.envs:GridWorldEnv",
-#        max_episode_steps=300,
-#   )
-
-# %%
-# The environment ID consists of three components, two of which are
-# optional: an optional namespace (here: ``gym_examples``), a mandatory
-# name (here: ``GridWorld``) and an optional but recommended version
-# (here: v0). It might have also been registered as ``GridWorld-v0`` (the
-# recommended approach), ``GridWorld`` or ``gym_examples/GridWorld``, and
-# the appropriate ID should then be used during environment creation.
-#
-# The keyword argument ``max_episode_steps=300`` will ensure that
-# GridWorld environments that are instantiated via ``gymnasium.make`` will
-# be wrapped in a ``TimeLimit`` wrapper (see `the wrapper
-# documentation </api/wrappers>`__ for more information). A done signal
-# will then be produced if the agent has reached the target *or* 300 steps
-# have been executed in the current episode. To distinguish truncation and
-# termination, you can check ``info["TimeLimit.truncated"]``.
-#
-# Apart from ``id`` and ``entrypoint``, you may pass the following
-# additional keyword arguments to ``register``:
-#
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | Name                 | Type      | Default   | Description                                                                                                   |
-# +======================+===========+===========+===============================================================================================================+
-# | ``reward_threshold`` | ``float`` | ``None``  | The reward threshold before the task is  considered solved                                                    |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | ``nondeterministic`` | ``bool``  | ``False`` | Whether this environment is non-deterministic even after seeding                                              |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | ``max_episode_steps``| ``int``   | ``None``  | The maximum number of steps that an episode can consist of. If not ``None``, a ``TimeLimit`` wrapper is added |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | ``order_enforce``    | ``bool``  | ``True``  | Whether to wrap the environment in an  ``OrderEnforcing`` wrapper                                             |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | ``autoreset``        | ``bool``  | ``False`` | Whether to wrap the environment in an ``AutoResetWrapper``                                                    |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-# | ``kwargs``           | ``dict``  | ``{}``    | The default kwargs to pass to the environment class                                                           |
-# +----------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------------+
-#
-# Most of these keywords (except for ``max_episode_steps``,
-# ``order_enforce`` and ``kwargs``) do not alter the behavior of
-# environment instances but merely provide some extra information about
-# your environment. After registration, our custom ``GridWorldEnv``
-# environment can be created with
-# ``env = gymnasium.make('gym_examples/GridWorld-v0')``.
-#
-# ``gym-examples/gym_examples/envs/__init__.py`` should have:
-#
-# .. code:: python
-#
-#    from gym_examples.envs.grid_world import GridWorldEnv
-#
-# If your environment is not registered, you may optionally pass a module
-# to import, that would register your environment before creating it like
-# this - ``env = gymnasium.make('module:Env-v0')``, where ``module``
-# contains the registration code. For the GridWorld env, the registration
-# code is run by importing ``gym_examples`` so if it were not possible to
-# import gym_examples explicitly, you could register while making by
-# ``env = gymnasium.make('gym_examples:gym_examples/GridWorld-v0)``. This
-# is especially useful when you’re allowed to pass only the environment ID
-# into a third-party codebase (eg. learning library). This lets you
-# register your environment without needing to edit the library’s source
-# code.
-
-# %%
-# Creating a Package
-# ------------------
-#
-# The last step is to structure our code as a Python package. This
-# involves configuring ``gym-examples/setup.py``. A minimal example of how
-# to do so is as follows:
-#
-# .. code:: python
-#
-#    from setuptools import setup
-#
-#    setup(
-#        name="gym_examples",
-#        version="0.0.1",
-#        install_requires=["gymnasium==0.26.0", "pygame==2.1.0"],
-#    )
-#
-# Creating Environment Instances
-# ------------------------------
-#
-# After you have installed your package locally with
-# ``pip install -e gym-examples``, you can create an instance of the
-# environment via:
-#
-# .. code:: python
-#
-#    import gym_examples
-#    env = gymnasium.make('gym_examples/GridWorld-v0')
-#
-# You can also pass keyword arguments of your environment’s constructor to
-# ``gymnasium.make`` to customize the environment. In our case, we could
-# do:
-#
-# .. code:: python
-#
-#    env = gymnasium.make('gym_examples/GridWorld-v0', size=10)
-#
-# Sometimes, you may find it more convenient to skip registration and call
-# the environment’s constructor yourself. Some may find this approach more
-# pythonic and environments that are instantiated like this are also
-# perfectly fine (but remember to add wrappers as well!).
-#
-# Using Wrappers
-# --------------
-#
-# Oftentimes, we want to use different variants of a custom environment,
-# or we want to modify the behavior of an environment that is provided by
-# Gymnasium or some other party. Wrappers allow us to do this without
-# changing the environment implementation or adding any boilerplate code.
-# Check out the `wrapper documentation </api/wrappers/>`__ for details on
-# how to use wrappers and instructions for implementing your own. In our
-# example, observations cannot be used directly in learning code because
-# they are dictionaries. However, we don’t actually need to touch our
-# environment implementation to fix this! We can simply add a wrapper on
-# top of environment instances to flatten observations into a single
-# array:
-#
-# .. code:: python
-#
-#    import gym_examples
-#    from gymnasium.wrappers import FlattenObservation
-#
-#    env = gymnasium.make('gym_examples/GridWorld-v0')
-#    wrapped_env = FlattenObservation(env)
-#    print(wrapped_env.reset())     # E.g.  [3 0 3 3], {}
-#
-# Wrappers have the big advantage that they make environments highly
-# modular. For instance, instead of flattening the observations from
-# GridWorld, you might only want to look at the relative position of the
-# target and the agent. In the section on
-# `ObservationWrappers </api/wrappers/#observationwrapper>`__ we have
-# implemented a wrapper that does this job. This wrapper is also available
-# in gym-examples:
-#
-# .. code:: python
-#
-#    import gym_examples
-#    from gym_examples.wrappers import RelativePosition
-#
-#    env = gymnasium.make('gym_examples/GridWorld-v0')
-#    wrapped_env = RelativePosition(env)
-#    print(wrapped_env.reset())     # E.g.  [-3  3], {}

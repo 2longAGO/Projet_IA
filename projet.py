@@ -58,7 +58,7 @@ def test(args):
 
     print("training environment name : " + env_name)
 
-    env = gym.make(env_name,args=args, render_mode="human")
+    env = gym.make(env_name,args=args, render_mode="human",nbObstacles=0)
     state, *_ = env.reset()
     #print(env.observation_space.shape)
     # state space dimension

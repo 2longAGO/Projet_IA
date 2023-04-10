@@ -54,11 +54,11 @@ def train(args):
 
     print("training environment name : " + env_name)
 
-    env = gym.make(env_name,args=args, render_mode="human")
+    env = gym.make(env_name,args=args, render_mode="human",nbObstacles=0)
     state, *_ = env.reset()
     #print(env.observation_space.shape)
     # state space dimension
-    state_dim = state['obstacles'].size+2 #env.observation_space.shape
+    state_dim = state['obstacles'].size+2
 
     # action space dimension
     if has_continuous_action_space:
@@ -133,12 +133,12 @@ def train(args):
     print("--------------------------------------------------------------------------------------------")
     print("optimizer learning rate actor : ", lr_actor)
     print("optimizer learning rate critic : ", lr_critic)
-    if random_seed:
-        print("--------------------------------------------------------------------------------------------")
-        print("setting random seed to ", random_seed)
-        torch.manual_seed(random_seed)
-        env.seed(random_seed)
-        np.random.seed(random_seed)
+    #if random_seed:
+    #    print("--------------------------------------------------------------------------------------------")
+    #    print("setting random seed to ", random_seed)
+    #    torch.manual_seed(random_seed)
+    #    env.seed(random_seed)
+    #    np.random.seed(random_seed)
     #####################################################
 
     print("============================================================================================")
@@ -174,6 +174,7 @@ def train(args):
         current_ep_reward = 0
 
         for t in range(1, max_ep_len+1):
+        #while True:
             processed_state = np.append(state['obstacles'],[state['speed'],state['distTarget']])
 
             # select action with policy
@@ -315,7 +316,3 @@ def main():
 if __name__ == '__main__':
 
     main()
-
-#if __name__ == '__main__':
-#
-#    train()

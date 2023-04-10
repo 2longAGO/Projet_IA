@@ -52,6 +52,33 @@ Donner plus de temps au système pour découvrir quoi faire par épisode serait 
 
 La fonction d'update uilisé peut être améliorer avec l'usage de torch.optim
 
+Resultats:
+Run 1: 4096 float input size in 1h45min the car couldn't dodge obstacles with any kind of consistency but you could see it trying to avoid going into the wall until it gave up
+Run 2: 1026 float input size in 20min the car seems to dodge obstacles it can see. It crashes into the slide because a 2d slice of the map doesn't allow for good enough detection in a 32x32 grid (the only solution is giving it more data but that slows training considerably) 
+       otherwise giving it supplemental data from other more sensitive sensor could remedy this issue.
+Run 3: Giving more points for speeding up (by making speed affect reward) it tries to avoid walls and doesn't seem affect by the added point gain of speed (error: it gained 50 every frame if the speed was below 50 km/h)
+Run 4: Reducing the fov to 180 degrees ahead of the car(514 floats for 32x32 screen size) (observations: the field of data given to the model can now be safely cut in half | initially the car's wheels seem to follow the lidar ray)
+Run 5: Making the data update as a sweep (radar style only update when scan passes) for more stable sensor data and cutting the data range in half 
+Run 6: Ajustments(added base survival reward, reduce reward for speed) ran into the wall more deliberately
+Run 7: no change from run 6 except bug fixing an issue with the sensor data
+Run 8: (change: Remove base survival) reward it avoid crashing more
+Run 9: (change: remove time limit on episodes)
+Run 10: (change: increase limit to 10000 steps an episode and adding punishment for no movement)
+Run 11: Truncate sensor values even more (change 546 input values)
+Run 12: Truncate sensor values even more (change 92 input values)
+Run 12: Truncate sensor values even more and up the resolution of the input (change 134 input values) runs into walls
+Run 13: Removing sensor radar-esque scanning behaviour
+Run 15: Update policy quicker
+Run 16: Extend the field of sensor (input size: 277) to make outline more noticeable
+Run 18: Make negative reward for collision relative to all actions taken and Reduce episode length the length gives it the time to learn bad habits early on it can't get rid of (result: 3h still doesn't consistently dodge walls)
+Run 20: Back to updating the policy once every 4 episodes and reduce points per scan to 10 (failed)
+Run 21: Slow down scan speed
+Run 22: Speed up scan add functional scan lidar (the scan refresh rate is to slow)
+Run 23: Add decay to scan data
+Run 24: decay 4x a cycle instead of once
+Idea: modify model to add vec2d for lidar data that is then combined with the other 2 float values
+         vec2d to 1x4 float + 1x2 float 
+
 documentation
 https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html?highlight=deep%20q
 https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/#sphx-glr-tutorials-gymnasium-basics-environment-creation-py
@@ -59,3 +86,4 @@ https://pytorch.org/tutorials/intermediate/reinforcement_ppo.html
 https://github.com/bitsauce/Carla-ppo
 https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/PPO/torch
 https://github.com/ericyangyu/PPO-for-Beginners
+https://github.com/AndersonJo/dqn-pytorch
