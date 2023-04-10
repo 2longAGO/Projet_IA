@@ -12,6 +12,7 @@
 * numpy
 * pygame
 * carla
+* scikit-image
 
 ## Application dependencies
 * [Carla](https://github.com/carla-simulator/carla/archive/refs/tags/0.9.14.zip)
