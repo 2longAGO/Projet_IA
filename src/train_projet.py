@@ -98,7 +98,7 @@ def train():
 
     # action space dimension
     if has_continuous_action_space:
-        action_dim = 2
+        action_dim = 2 # steer angle , velocity
     else:
         action_dim = env.action_space.n
 
@@ -217,10 +217,10 @@ def train():
 
             # select action with policy
             action = ppo_agent.select_action(processed_state)
-
+            action[1] = abs(action[1])
+            # steer angle , velocity
             actions.append(list(action))
             actions = np.array(actions)
-
             state, reward, done, _ = env.step(actions)
 
             # saving reward and is_terminals
@@ -228,11 +228,6 @@ def train():
             ppo_agent.buffer.is_terminals.append(done)
 
             time_step +=1
-
-            if velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) > 3:
-                current_ep_reward += reward
-            
-            
             current_ep_reward += reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0])*0.5 if reward > 0 else reward
 
             # update PPO agent
