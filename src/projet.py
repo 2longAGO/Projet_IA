@@ -1,6 +1,7 @@
 import os
 import glob
 import time
+import sys
 from datetime import datetime
 
 import torch
@@ -114,6 +115,9 @@ def test():
     print("loading network from : " + checkpoint_path)
     if os.path.exists(checkpoint_path) :
         ppo_agent.load(checkpoint_path)
+    else:
+        print("No trained model exists!")
+        sys.exit()
 
     print("--------------------------------------------------------------------------------------------")
 
@@ -130,18 +134,13 @@ def test():
             actions.append(list(action))
             actions = np.array(actions)
             state, reward, done, _ = env.step(actions)
-            ep_reward += reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0])*0.5
 
             if render:
                 proc_ranges = obs['scans'][0]
                 vis.step(proc_ranges)
                 env.render(mode='human_fast') # human to make it easier to discern
                 #time.sleep(frame_delay)
-
-            if state['collisions'].any() == 1.0:
-                ep_reward -= 10
-                break
-
+            
             if done:
                 break
 

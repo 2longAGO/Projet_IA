@@ -24,6 +24,8 @@ def preprocess_lidar(ranges):
     """
     # remove quadrant of LiDAR directly behind us
     eighth = int(len(ranges) / 8)
+    np.array(ranges[eighth:-eighth])
+    
     return np.array(ranges[eighth:-eighth])
 
 ################################### Training ###################################
@@ -229,6 +231,9 @@ def train():
 
             if velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) > 3:
                 current_ep_reward += reward
+            
+            
+            current_ep_reward += reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0])*0.5 if reward > 0 else reward
 
             # update PPO agent
             if time_step % update_timestep == 0:
