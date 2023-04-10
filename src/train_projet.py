@@ -24,8 +24,6 @@ def preprocess_lidar(ranges):
     """
     # remove quadrant of LiDAR directly behind us
     eighth = int(len(ranges) / 8)
-    np.array(ranges[eighth:-eighth])
-    
     return np.array(ranges[eighth:-eighth])
 
 ################################### Training ###################################
@@ -273,7 +271,7 @@ def train():
                 print("--------------------------------------------------------------------------------------------")
 
             if render:
-                proc_ranges = obs['scans'][0]
+                proc_ranges = state['scans'][0]
                 vis.step(proc_ranges)
                 env.render(mode='human')
                 #time.sleep(frame_delay)

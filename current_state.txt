@@ -61,4 +61,4 @@ Run 5: Ajout de la règle qui demande une certaine vitesse pour obtenir des poin
 Il a arrêter de bouger parce que le threshold de vitesse était trop élevé pour qu'il se rende compte du but
 Run 6: Rêgle de vitesse basé sur la multiplication de la reward par la vitesse
     la rêgle ne discrimine pas contre le reculons
-Run 7: 
+Run 7: Retirer l'habileté de reculer

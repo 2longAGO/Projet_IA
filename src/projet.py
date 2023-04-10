@@ -136,7 +136,7 @@ def test():
             state, reward, done, _ = env.step(actions)
 
             if render:
-                proc_ranges = obs['scans'][0]
+                proc_ranges = state['scans'][0]
                 vis.step(proc_ranges)
                 env.render(mode='human_fast') # human to make it easier to discern
                 #time.sleep(frame_delay)
