@@ -289,7 +289,7 @@ class CarlaAvoidanceEnv(gym.Env):
             #self.actor_list.append(obSensor)
             sensor_points_per_second = '100000' #0000
             self.channels = 64
-            self.range = 10
+            self.range = 50
             self.lSensor = LiDARSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4)), {'channels' : f'{self.channels}', 'range' : f'{self.range}', 'horizontal_fov': '180', 'points_per_second': sensor_points_per_second, 'rotation_frequency': '20'})
             self.actor_list.append(self.lSensor)
             self.rSensor = RadarSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(pitch=0, yaw=0)), {'points_per_second': sensor_points_per_second,'vertical_fov': str(20), 'horizontal_fov': str(70),'range' : str(self.range)})

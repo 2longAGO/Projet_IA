@@ -75,7 +75,8 @@ Run 20: Back to updating the policy once every 4 episodes and reduce points per 
 Run 21: Slow down scan speed
 Run 22: Speed up scan add functional scan lidar (the scan refresh rate is to slow)
 Run 23: Add decay to scan data
-Run 24: decay 4x a cycle instead of once
+Run 24: decay 4x a cycle instead of once ( Result: Seems to work but has to get very close to obstacles before it does anything )
+Run 25: Expand range back to 50
 Idea: modify model to add vec2d for lidar data that is then combined with the other 2 float values
          vec2d to 1x4 float + 1x2 float 
 
