@@ -28,7 +28,7 @@ def preprocess_lidar(ranges,nbRays=16):
     buf_ranges = ranges[eighth:-eighth]
     return np.array(buf_ranges[range(0,len(buf_ranges),len(buf_ranges)//nbRays)])
 
-def reward_fn(state,reward=0):
+def reward_fn(state,reward):
     # state contains
     # Linear_vels_x Linear_vels_y current speed of each vehicle on the track
     # collisions of each vehicle on the track
