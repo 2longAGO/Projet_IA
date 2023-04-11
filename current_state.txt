@@ -69,7 +69,7 @@ Run 11: Diminuer la durée d'une épisode
 Run 12: Back to all lidar values minus backwards
 Run 12: reduce radars and give less penalty for collisions
 Run 13: reduce input data to 10
-
+Test to see if the removal of all backwards is a detriment
 (TO-DO) Add incentive to go forward
 
 Observation génerale la performance est toujours meilleur avec peu de données d'entrée

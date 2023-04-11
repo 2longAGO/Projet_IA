@@ -17,15 +17,15 @@ from LidarVis import Visualiser, calc_end_pos
 velVector = lambda x,y: math.sqrt(x**2+y**2)
 render = True
 # Change number of rays 
-def preprocess_lidar(ranges,nbRays=8):
+def preprocess_lidar(ranges,nbRays=16):
     """ Any preprocessing of the LiDAR data can be done in this function.
         Possible Improvements: smoothing of outliers in the data and placing
         a cap on the maximum distance a point can be.
     """
     # remove quadrant of LiDAR directly behind us
     # print(type(ranges))
-    eighth = int(len(ranges) / 8)
-    buf_ranges = ranges[eighth:-eighth]
+    #eighth = int(len(ranges) / 8)
+    buf_ranges = ranges  #[eighth:-eighth]
     return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
@@ -233,7 +233,7 @@ def train():
             # select action with policy
             action = ppo_agent.select_action(processed_state)
             action[0] = max(min(action[0], 2), -2) # clamp between -2 to 2
-            action[1] = abs(action[1])*20 # Max speed is around double the multiplier
+            action[1] = abs(action[1])*5 # Max speed is around double the multiplier
             # steer angle , velocity
             actions.append(list(action))
             actions = np.array(actions)
