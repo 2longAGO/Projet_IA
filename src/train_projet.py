@@ -25,9 +25,10 @@ def preprocess_lidar(ranges,nbRays=16):
     # remove quadrant of LiDAR directly behind us
     # print(type(ranges))
     #eighth = int(len(ranges) / 8)
-    buf_ranges = ranges  #[eighth:-eighth]
+    #buf_ranges = ranges  #[eighth:-eighth]
     #return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
-    return np.array(buf_ranges[range(135,945,((945-135)//nbRays) if nbRays > 0 else 1)])
+    stop = min(945,len(ranges))
+    return np.array(ranges[range(135,stop,(stop//nbRays) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
     # state contains
