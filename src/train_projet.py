@@ -26,7 +26,8 @@ def preprocess_lidar(ranges,nbRays=16):
     # print(type(ranges))
     #eighth = int(len(ranges) / 8)
     buf_ranges = ranges  #[eighth:-eighth]
-    return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
+    #return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
+    return np.array(buf_ranges[range(135,945,((945-135)//nbRays) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
     # state contains
@@ -75,7 +76,7 @@ def train():
     gamma = 0.99            # discount factor
 
     lr_actor = 0.0003       # learning rate for actor network
-    lr_critic = 0.001       # learning rate for critic network
+    lr_critic = 0.003       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
     #####################################################

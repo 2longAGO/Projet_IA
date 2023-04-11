@@ -70,7 +70,9 @@ Run 12: Back to all lidar values minus backwards
 Run 12: reduce radars and give less penalty for collisions
 Run 13: reduce input data to 10
 Test to see if the removal of all backwards is a detriment
+Run 14: (log 23) Increase learning rate value of the critic (Seems less finicky in it's decisions)
+Run 15: Adjust sensor data 
+Increase agent speed backup 
 (TO-DO) Add incentive to go forward
 Idea: return an array of nbRay size with only the longest rays not at 0 and the agent would only need to learn to follow the direction that ray indicates
-
 Observation génerale la performance est toujours meilleur avec peu de données d'entrée
