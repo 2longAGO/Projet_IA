@@ -37,7 +37,7 @@ def reward_fn(state,reward):
     # transform the reward based on the current speed of the vehicle
     reward = reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) if reward > 0 else reward
     # reduce reward if a collision happens
-    reward -= 15 if state['collisions'].any() == 1.0 else 0
+    reward -= 1500 if state['collisions'].any() == 1.0 else 0
     return reward
 
 ################################### Training ###################################
@@ -49,7 +49,7 @@ def train():
 
     has_continuous_action_space = True  # continuous action space; else discrete
 
-    max_ep_len = 1000                   # max timesteps in one episode
+    max_ep_len = 10000                  # max timesteps in one episode
     max_training_timesteps = int(3e6)   # break training loop if timeteps > max_training_timesteps
 
     print_freq = max_ep_len * 10        # print avg reward in the interval (in num timesteps)
@@ -230,7 +230,7 @@ def train():
             # select action with policy
             action = ppo_agent.select_action(processed_state)
             action[0] = max(min(action[0], 2), -2) # clamp between -2 to 2
-            action[1] = abs(action[1])
+            action[1] = abs(action[1])*20 # Max speed is around double the multiplier
             # steer angle , velocity
             actions.append(list(action))
             actions = np.array(actions)
@@ -293,7 +293,7 @@ def train():
                 #time.sleep(frame_delay)
             
             # break; if the episode is over
-            if done:
+            if done or state['collisions'].any() == 1.0 :
                 break
 
         print_running_reward += current_ep_reward
