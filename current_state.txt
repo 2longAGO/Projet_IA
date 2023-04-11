@@ -64,3 +64,12 @@ Run 6: Rêgle de vitesse basé sur la multiplication de la reward par la vitesse
 Run 7: Retirer l'habileté de reculer
 Run 8: Diminuer la plage d' actions et diminuer les lasers pris en compte à 16. (Résultats: Semble éviter activement les collisions après juste 53 épisodes)
 Run 9: Augmenter la valeur de la vitesse
+Run 10: Augmenter la durée d'une épisode
+Run 11: Diminuer la durée d'une épisode
+Run 12: Back to all lidar values minus backwards
+Run 12: reduce radars and give less penalty for collisions
+Run 13: reduce input data to 10
+
+(TO-DO) Add incentive to go forward
+
+Observation génerale la performance est toujours meilleur avec peu de données d'entrée

@@ -16,8 +16,8 @@ from LidarVis import Visualiser, calc_end_pos
 
 velVector = lambda x,y: math.sqrt(x**2+y**2)
 render = True
-
-def preprocess_lidar(ranges,nbRays=16):
+# Change number of rays 
+def preprocess_lidar(ranges,nbRays=8):
     """ Any preprocessing of the LiDAR data can be done in this function.
         Possible Improvements: smoothing of outliers in the data and placing
         a cap on the maximum distance a point can be.
@@ -26,18 +26,21 @@ def preprocess_lidar(ranges,nbRays=16):
     # print(type(ranges))
     eighth = int(len(ranges) / 8)
     buf_ranges = ranges[eighth:-eighth]
-    return np.array(buf_ranges[range(0,len(buf_ranges),len(buf_ranges)//nbRays)])
+    return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
     # state contains
     # Linear_vels_x Linear_vels_y current speed of each vehicle on the track
     # collisions of each vehicle on the track
     # poses_x poses_y current position of each vehicle on the track
+    # lap_counts number of laps of the circuit
+    # lap_times time taken for a lap and current time of the lap
     # We only have 1 vehicle so we get the 0 for the speed of the singular vehicle
     # transform the reward based on the current speed of the vehicle
+    # (TO-DO) Add incentive to go forward
     reward = reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) if reward > 0 else reward
     # reduce reward if a collision happens
-    reward -= 1500 if state['collisions'].any() == 1.0 else 0
+    reward -= 50 if state['collisions'].any() == 1.0 else 0
     return reward
 
 ################################### Training ###################################
@@ -287,7 +290,7 @@ def train():
                 print("--------------------------------------------------------------------------------------------")
 
             if render:
-                proc_ranges = state['scans'][0]
+                proc_ranges = state['scans'][0] #preprocess_lidar(state['scans'][0])
                 vis.step(proc_ranges)
                 env.render(mode='human')
                 #time.sleep(frame_delay)
