@@ -62,3 +62,5 @@ Il a arrêter de bouger parce que le threshold de vitesse était trop élevé po
 Run 6: Rêgle de vitesse basé sur la multiplication de la reward par la vitesse
     la rêgle ne discrimine pas contre le reculons
 Run 7: Retirer l'habileté de reculer
+Run 8: Diminuer la plage d' actions et diminuer les lasers pris en compte à 16. (Résultats: Semble éviter activement les collisions après juste 53 épisodes)
+Run 9: Augmenter la valeur de la vitesse

@@ -28,6 +28,13 @@ def preprocess_lidar(ranges,nbRays=16):
     buf_ranges = ranges[eighth:-eighth]
     return np.array(buf_ranges[range(0,len(buf_ranges),len(buf_ranges)//nbRays)])
 
+def reward_fn(state,reward=0):
+    # transform the reward based on the current speed of the vehicle
+    reward = reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) if reward > 0 else reward
+    # reduce reward if a collisioin happens
+    reward -= 15 if state['collisions'].any() == 1.0 else 0
+    return reward
+
 ################################### Training ###################################
 def train():
     print("============================================================================================")
@@ -223,13 +230,14 @@ def train():
             actions.append(list(action))
             actions = np.array(actions)
             state, reward, done, _ = env.step(actions)
+            reward = reward_fn(state)
 
             # saving reward and is_terminals
             ppo_agent.buffer.rewards.append(reward)
             ppo_agent.buffer.is_terminals.append(done)
 
             time_step +=1
-            current_ep_reward += reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0])*0.5 if reward > 0 else reward
+            current_ep_reward += reward
 
             # update PPO agent
             if time_step % update_timestep == 0:
@@ -278,10 +286,6 @@ def train():
                 vis.step(proc_ranges)
                 env.render(mode='human')
                 #time.sleep(frame_delay)
-
-            if state['collisions'].any() == 1.0:
-                current_ep_reward -= 15
-                break
             
             # break; if the episode is over
             if done:
