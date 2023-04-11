@@ -30,7 +30,7 @@ def preprocess_lidar(ranges,nbRays=16):
 
 def reward_fn(state,reward=0):
     # state contains
-    # Linear_vels_x Linear_vels_y current speed current position of each vehicle on the track
+    # Linear_vels_x Linear_vels_y current speed of each vehicle on the track
     # collisions of each vehicle on the track
     # poses_x poses_y current position of each vehicle on the track
     # We only have 1 vehicle so we get the 0 for the speed of the singular vehicle
