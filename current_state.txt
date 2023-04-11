@@ -71,5 +71,6 @@ Run 12: reduce radars and give less penalty for collisions
 Run 13: reduce input data to 10
 Test to see if the removal of all backwards is a detriment
 (TO-DO) Add incentive to go forward
+Idea: return an array of nbRay size with only the longest rays not at 0 and the agent would only need to learn to follow the direction that ray indicates
 
 Observation génerale la performance est toujours meilleur avec peu de données d'entrée
