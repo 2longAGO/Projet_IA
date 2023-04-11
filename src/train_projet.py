@@ -235,7 +235,7 @@ def train():
             actions.append(list(action))
             actions = np.array(actions)
             state, reward, done, _ = env.step(actions)
-            reward = reward_fn(state)
+            reward = reward_fn(state,reward)
 
             # saving reward and is_terminals
             ppo_agent.buffer.rewards.append(reward)
