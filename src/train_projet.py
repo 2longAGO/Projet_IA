@@ -29,9 +29,14 @@ def preprocess_lidar(ranges,nbRays=16):
     return np.array(buf_ranges[range(0,len(buf_ranges),len(buf_ranges)//nbRays)])
 
 def reward_fn(state,reward=0):
+    # state contains
+    # Linear_vels_x Linear_vels_y current speed current position of each vehicle on the track
+    # collisions of each vehicle on the track
+    # poses_x poses_y current position of each vehicle on the track
+    # We only have 1 vehicle so we get the 0 for the speed of the singular vehicle
     # transform the reward based on the current speed of the vehicle
     reward = reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) if reward > 0 else reward
-    # reduce reward if a collisioin happens
+    # reduce reward if a collision happens
     reward -= 15 if state['collisions'].any() == 1.0 else 0
     return reward
 
