@@ -28,7 +28,7 @@ def preprocess_lidar(ranges,nbRays=16):
     #buf_ranges = ranges  #[eighth:-eighth]
     #return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
     stop = min(945,len(ranges))
-    return np.array(ranges[range(135,stop,(stop//nbRays) if nbRays > 0 else 1)])
+    return np.array(ranges[range(135,stop,(stop//nbRays+2) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
     # state contains
@@ -76,7 +76,7 @@ def train():
     eps_clip = 0.2          # clip parameter for PPO
     gamma = 0.99            # discount factor
 
-    lr_actor = 0.0003       # learning rate for actor network
+    lr_actor = 0.0008       # learning rate for actor network
     lr_critic = 0.003       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
@@ -235,7 +235,7 @@ def train():
             # select action with policy
             action = ppo_agent.select_action(processed_state)
             action[0] = max(min(action[0], 2), -2) # clamp between -2 to 2
-            action[1] = abs(action[1])*5 # Max speed is around double the multiplier
+            action[1] = abs(action[1])*10 # Max speed is around double the multiplier
             # steer angle , velocity
             actions.append(list(action))
             actions = np.array(actions)
