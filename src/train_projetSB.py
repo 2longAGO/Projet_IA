@@ -52,11 +52,11 @@ def reward_fn(state,reward):
         "poses_y": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
     """
     # transform the reward based on the current speed of the vehicle
-    reward = reward*velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]) if reward > 0 else reward
+    reward += min(velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]),1)
     # Give reward for proximity to DisparityExtender
-    reward += 15/max(velVector(state['poses_x'][0] - state['poses_x'][3],state['poses_y'][0]-state['poses_y'][3]),5)
+    reward += 2/max(velVector(state['poses_x'][0] - state['poses_x'][1],state['poses_y'][0]-state['poses_y'][1]),2)
     # reduce reward if a collision happens
-    reward -= 50 if state['collisions'].any() == 1.0 else 0
+    reward -= 75 if state['collisions'].any() == 1.0 else 0
     # (TO-DO) Add incentive to go forward
     
     return reward
@@ -79,7 +79,7 @@ def train(): # args
     ####### initialize environment hyperparameters ######
     env_name = 'f110-v0'
     racetrack = "TRACK_1"
-    listDrivers = [SimpleDriver(),GapFollower(),DisparityExtender()]
+    listDrivers = [GapFollower()] # SimpleDriver(),DisparityExtender()
     render = True
     max_training_timesteps = int(3e6)   # break training loop if timesteps > max_training_timesteps
     #####################################################
