@@ -33,8 +33,10 @@ import pygame
 from pygame.locals import*
 from skimage.draw import line
 
-import gymnasium as gym
-from gymnasium import spaces
+#import gymnasium as gym
+#from gymnasium import spaces
+import gym
+from gym import spaces
 
 import time
 import math
@@ -106,7 +108,7 @@ class CollisionSensor(GenericSensor):
 
 class LiDARSensor(GenericSensor):
     tick = 0
-    prev_frame = 0
+    prev_frame = 1
     def __init__(self, parent_actor,transform,sensor_options):
         super().__init__(parent_actor)
         world = self._parent.get_world()
@@ -130,6 +132,7 @@ class LiDARSensor(GenericSensor):
         self.tick = (self.tick+1)%181
         if not self:
             return
+        #self.prev_frame += lidar_measurement.frame-self.prev_frame
         #print(f"lidar: {lidar_measurement.raw_data}")
         self.append_history((lidar_measurement.frame,lidar_measurement))
     
@@ -149,21 +152,22 @@ class LiDARSensor(GenericSensor):
         lidar_img = np.zeros((lidar_img_size), dtype=np.uint8)
         lidar_img[tuple(lidar_data.T)] = (255, 255, 255) if not clamp else 1
         # get center height + and minus a certain amount 
-        # witdh + a certaim amount
+        # witdh + a certain amount
         width = lidar_img.shape[1]//2
         height = lidar_img.shape[0]//3
         cut_data = lidar_img[width-1:width+width//3,height-2:(height*2)+2]
+
+        angle = self.tick-90
         
-        if buffer is None or abs(angle)%45 == 0:
+        if buffer is None or abs(angle)%90 == 0:
             buffer = np.zeros(cut_data.shape)
         
-        angle = self.tick-90
         y = math.trunc(cut_data.shape[0]*math.cos(angle))
         x = math.trunc(cut_data.shape[0]*math.sin(angle))
         rr, cc = line(0,cut_data.shape[1]//2,abs(x),abs(y-(cut_data.shape[1]//2)))
         buffer[rr,cc] = (0, 0, 0) if not clamp else 0
-        
-        buffer = np.fmax(buffer,cut_data)
+        #buffer = np.fmax(buffer,cut_data)
+        buffer = np.average(np.array([buffer,cut_data]),axis=0) #if abs(angle)%45 == 0 else np.fmax(buffer,cut_data)
         return buffer
 
 class RadarSensor(GenericSensor):
@@ -207,14 +211,14 @@ class CarlaAvoidanceEnv(gym.Env):
     buffer = None
     buffer_obs = None
     ticks = 0
-    def __init__(self, args, render_mode=None, nbObstacles=2):
+    def __init__(self, args, render_mode=None, nbObstacles=2, cont_act=False):
         self.window_size = 512  # The size of the PyGame window
         self.nbObstacles = nbObstacles
-
+        self.cont_act = cont_act
         if args.server_path is not None:
             # args for lower gpu load: -quality-level=Low 
             # -vulkan or -opengl
-            self.process = subprocess.Popen(f'{args.server_path}')
+            self.process = subprocess.Popen(f'{args.server_path} -quality-level=Low')
         
         try:
             self.client = carla.Client(args.host, args.port)
@@ -286,7 +290,7 @@ class CarlaAvoidanceEnv(gym.Env):
             #self.actor_list.append(obSensor)
             sensor_points_per_second = '100000' #0000
             self.channels = 64
-            self.range = 50
+            self.range = 20
             self.lSensor = LiDARSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4)), {'channels' : f'{self.channels}', 'range' : f'{self.range}', 'horizontal_fov': '180', 'points_per_second': sensor_points_per_second, 'rotation_frequency': '20'})
             self.actor_list.append(self.lSensor)
             self.rSensor = RadarSensor(self.vehicle, carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(pitch=0, yaw=0)), {'points_per_second': sensor_points_per_second,'vertical_fov': str(20), 'horizontal_fov': str(70),'range' : str(self.range)})
@@ -309,27 +313,28 @@ class CarlaAvoidanceEnv(gym.Env):
         self.window = pygame.init()
         self.screen = pygame.display.set_mode((self.window_size,self.window_size))
         self.font = pygame.font.Font(pygame.font.get_default_font(), 16)
-        self.img_size = 64
+        self.img_size = 256
+        shape_size = (self.img_size//2//3+1)*(self.img_size//3+4)
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         # discrete states wall left right front back front-left front-right back-left back-right if less than half range away they are true
         self.observation_space = spaces.Dict(
             {
-                "obstacles": spaces.Box(0, 1, shape=(1,self.img_size**2), dtype=np.float32), # lidar observation space
+                "obstacles": spaces.Box(low=0, high=1, shape=(shape_size,), dtype=np.float32), # lidar observation space
                 #"obstacles": spaces.Box(0, self.range, shape=(self.channels,), dtype=np.float32), # swap high for range of sensor and add second value to shape for number of rays
-                "speed": spaces.Box(0, 500, dtype=np.float32), # high = get max speed from vehicle initialisation
-                "distTarget": spaces.Box(0, sys.maxsize, dtype=np.float32),
+                "speed": spaces.Box(low=0, high=500, shape=(1,), dtype=np.float32), # high = get max speed from vehicle initialisation
+                "distTarget": spaces.Box(low=0, high=sys.maxsize, shape=(1,), dtype=np.float32),
             }
         )
-
-        #print(self.observation_space.is_np_flattenable)
-        self.action_space = gym.spaces.Discrete(4)
-        self.steer = 0.0
-        self.throttle = 0.0
-        self.brake = 0.0
-        self.ACT_AMT = 0.25
-        # self.action_space = gym.spaces.Box(np.array([-1, -1]), np.array([1, 1]), dtype=np.float32) # steer, throttle(+), brake(-) Non discrete values
-
+        if self.cont_act:
+            self.action_space = gym.spaces.Box(np.array([-1, -1]), np.array([1, 1]), dtype=np.float32) # steer, throttle(+), brake(-) Non discrete values
+        else:
+            self.action_space = gym.spaces.Discrete(4)
+            self.steer = 0.0
+            self.throttle = 0.0
+            self.brake = 0.0
+            self.ACT_AMT = 0.25
+        
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
@@ -359,7 +364,7 @@ class CarlaAvoidanceEnv(gym.Env):
         ldata = self.buffer_obs
         dataArr = np.array(ldata,dtype=np.float32) #rdata
         dataArr = np.ndarray.flatten(dataArr)
-        return {"obstacles": dataArr, "speed": v_kmh(self.vehicle.get_velocity()), "distTarget": self._agent_location.location.distance(self._target_location.location)}
+        return {"obstacles": dataArr, "speed": np.array([v_kmh(self.vehicle.get_velocity())], dtype=np.float32), "distTarget": np.array([self._agent_location.location.distance(self._target_location.location)],dtype=np.float32)}
 
 # %%
 # We can also implement a similar method for the auxiliary information
@@ -367,7 +372,10 @@ class CarlaAvoidanceEnv(gym.Env):
 # to provide the manhattan distance between the agent and the target:
 
     def _get_info(self):
-        return { "agent": self._agent_location.location, "target": self._target_location.location }
+        aLoc = self._agent_location.location
+        tLoc = self._target_location.location
+        return { "agent": np.array([aLoc.x,aLoc.y,aLoc.z],dtype=np.float32),\
+                 "target": np.array([tLoc.x,tLoc.y,tLoc.z],dtype=np.float32)}
 
 # %%
 # Oftentimes, info will also contain some data that is only available
@@ -398,9 +406,9 @@ class CarlaAvoidanceEnv(gym.Env):
 # and some auxiliary information. We can use the methods ``_get_obs`` and
 # ``_get_info`` that we implemented earlier for that:
 
-    def reset(self, seed=None, options=None):
+    def reset(self): # , seed=None, options=None
         # We need the following line to seed self.np_random
-        super().reset(seed=seed)
+        #super().reset(seed=seed)
         
         self.init_scene()
         while v_kmh(self.vehicle.get_acceleration()) > 10 :
@@ -412,10 +420,14 @@ class CarlaAvoidanceEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, info
+        return observation #, info only 1 value returned to make it compatible with stablebaselines
 
     def init_scene(self):
-         # Do a soft reset (teleport vehicle)
+        # Do a soft reset (teleport vehicle)
+        if self.cont_act == False:
+            self.steer = 0.0
+            self.throttle = 0.0
+            self.brake = 0.0
         control = carla.VehicleControl(steer=float(0.0),throttle=float(0.0),brake=float(0.0))
         self.vehicle.apply_control(control)
         
@@ -447,6 +459,20 @@ class CarlaAvoidanceEnv(gym.Env):
             time.sleep(2.0)
 
         self.colSensor.history.clear()
+
+    def reward_fn(self):
+        reward = 0
+        reward += 50 if np.array_equal(self._agent_location.location, self._target_location.location) else 0  # Binary sparse rewards
+        terminated = np.array_equal(self._agent_location.location, self._target_location.location)
+        reward += v_kmh(self.vehicle.get_velocity())/50 if v_kmh(self.vehicle.get_velocity()) < 50 else 2 #max(min(50-v_kmh(self.vehicle.get_velocity()),1),0)
+        if v_kmh(self.vehicle.get_velocity()) < 0.5 :
+            reward -= 2
+        if self.colSensor.get_latest() is not None :
+            reward -= 200
+            terminated = True
+        reward/= min(max(self._agent_location.location.distance(self._target_location.location),1),5) if reward > 0 else 1
+        return reward, terminated
+        
     
 # %%
 # Step
@@ -466,37 +492,28 @@ class CarlaAvoidanceEnv(gym.Env):
         #(TO-DO) Complete the step function
         self.tick_world()
         # Control vehicle 
-        # Continous states
-        # control = carla.VehicleControl(steer=action[0],throttle=max(action[1],0),brake=-min(action[1],0))
+        if self.cont_act:
+            # Continous states
+            control = carla.VehicleControl(steer=float(action[0]),throttle=float(max(action[1],0)),brake=float(max(-action[1],0)))
         # control.reverse boolean True = engaged False = disengaged
         # control.brake float 0 to 1
-
-        # Discrete states
-        if action == 0: # forward
-            self.throttle = min(self.throttle+self.ACT_AMT,1)
-            self.brake = 0
-        elif action == 1: # right?
-            self.steer = self.steer + self.ACT_AMT
-        elif action == 2: # left?
-            self.steer = self.steer - self.ACT_AMT
-        elif action == 3: # brake
-            self.brake = min(self.throttle+self.ACT_AMT,1)
-            self.throttle = 0
-        self.steer = min(max(self.steer,-1),1)
-        control = carla.VehicleControl(steer=self.steer,throttle=self.throttle,brake=self.brake)
+        else:
+            # Discrete states
+            if action == 0: # forward
+                self.throttle = min(self.throttle+self.ACT_AMT,1)
+                self.brake = 0
+            elif action == 1: # right?
+                self.steer = self.steer + self.ACT_AMT
+            elif action == 2: # left?
+                self.steer = self.steer - self.ACT_AMT
+            elif action == 3: # brake
+                self.brake = min(self.throttle+self.ACT_AMT,1)
+                self.throttle = 0
+            self.steer = min(max(self.steer,-1),1)
+            control = carla.VehicleControl(steer=self.steer,throttle=self.throttle,brake=self.brake)
         self.vehicle.apply_control(control)
         self._agent_location = self.vehicle.get_transform()
-        reward = 0
-        terminated = False
-        # An episode is done if the agent has reached the target
-        # terminated = np.array_equal(self._agent_location.location, self._target_location.location)
-        reward += 50 if np.array_equal(self._agent_location.location, self._target_location.location) else 0  # Binary sparse rewards
-        reward += v_kmh(self.vehicle.get_velocity())/50 if v_kmh(self.vehicle.get_velocity()) < 50 else 2 #max(min(50-v_kmh(self.vehicle.get_velocity()),1),0)
-        if v_kmh(self.vehicle.get_velocity()) < 0.5 :
-            reward -= 2
-        if self.colSensor.get_latest() is not None :
-            reward -= 200
-            terminated = True
+        reward, terminated = self.reward_fn()
         
         observation = self._get_obs()
         info = self._get_info()
@@ -504,7 +521,7 @@ class CarlaAvoidanceEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
+        return observation, reward, terminated, info # , False remove previous fourth value for stablebaselines compatibility
     
     def tick_world(self):
         # Carla Tick
@@ -550,7 +567,7 @@ class CarlaAvoidanceEnv(gym.Env):
 # is used in many environments that are included with Gymnasium and you
 # can use it as a skeleton for your own environments:
 
-    def render(self):
+    def render(self,mode='rgb_array'):
         if self.render_mode == "rgb_array":
             return self._render_frame()
 
@@ -559,12 +576,11 @@ class CarlaAvoidanceEnv(gym.Env):
 
 
         for event in pygame.event.get():
-            if event.type == QUIT:       
+            if event.type == QUIT:  
                 self.close()            
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
-                    pygame.quit()        
-                    sys.exit()
+                    self.close() 
                 elif event.key == K_1:
                     settings = self.world.get_settings()
                     settings.no_rendering_mode = True
@@ -592,7 +608,7 @@ class CarlaAvoidanceEnv(gym.Env):
         text_surface = self.font.render(f"speed: {'{:3.2f}'.format(v_kmh(self.vehicle.get_velocity()))} | {formatted_vec3d(self.vehicle.get_velocity())}", True, (255,255,255))
         self.screen.fill((125,125,125))
         self.rad_callback(self.rSensor.get_latest()[1])
-        self.buffer = self.lSensor.get_lidar_image(window_size=self.window_size,buffer=self.buffer)
+        self.buffer = self.lSensor.get_lidar_image(window_size=self.window_size,buffer=self.buffer,ld_range=self.range)
         self.screen.blit(pygame.surfarray.make_surface(self.buffer),(100,100))
         self.screen.blit(text_surface, (0,0))
         pygame.display.update()
