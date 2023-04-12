@@ -92,7 +92,21 @@ class F110Env(gym.Env, utils.EzPickle):
     """
     metadata = {'render.modes': ['human', 'human_fast']}
 
-    def __init__(self, **kwargs):        
+    def __init__(self, **kwargs):    
+        self.action_space = spaces.Box(low=np.array([-1,0]), high=np.array([1,1]),
+                                            shape=(2,1), dtype=np.flaot32)
+        self.observation_space = spaces.Dict(
+            {
+                "Linear_vels_x": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
+                "Linear_vels_y": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
+                "collisions": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
+                "poses_x": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
+                "poses_y": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
+                "lap_counts": spaces.Box(0, np.inf, shape=(1,1),dtype=np.int),
+                "lap_times": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
+                #"scans": spaces
+            }
+        )
         # kwargs extraction
         try:
             self.seed = kwargs['seed']
@@ -225,6 +239,9 @@ class F110Env(gym.Env, utils.EzPickle):
         
         done = np.all(self.toggle_list >= 4)
         
+        if obs['collisions'].any() :
+            done = True
+        
         return done, self.toggle_list >= 4
 
     def _update_state(self, obs_dict):
@@ -309,7 +326,7 @@ class F110Env(gym.Env, utils.EzPickle):
         # get no input observations
         action = np.zeros((self.num_agents, 2))
         obs, reward, done, info = self.step(action)
-        return obs, reward, done, info
+        return obs #, reward, done, info
 
     def update_map(self, map_path, map_ext):
         """
