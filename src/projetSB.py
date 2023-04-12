@@ -61,9 +61,9 @@ def reward_fn(state,reward):
     
     return reward
 
-################################### Training ###################################
-def train(): # args
-
+################################### Testing ###################################
+def test(): # args
+    #
     ################################## set device ##################################
     print("============================================================================================")
     # set device to cpu or cuda
@@ -78,23 +78,15 @@ def train(): # args
 
     ####### initialize environment hyperparameters ######
     env_name = 'f110-v0'
-    racetrack = "TRACK_1"
+    racetrack = "TRACK_2"
     listDrivers = [GapFollower()] # SimpleDriver(),DisparityExtender()
     render = True
-    max_training_timesteps = 150000  # break training loop if timesteps > max_training_timesteps
     #####################################################
 
     print("training environment name : " + env_name)
     env = gym.make('f110_gym:f110-v0', map="maps/{}".format(racetrack), map_ext=".png", render_step=render, reward_fn=reward_fn, lidar_fn=preprocess_lidar, drivers=listDrivers)
     check_env(env)
-    model = PPO("MultiInputPolicy", env, verbose=1, device=device)
-    model.learn(total_timesteps=max_training_timesteps)
-    model.save("ppo_f110")
-    print("============================================================================================")
-    print("Training complete!")
-    print("============================================================================================")
     model = PPO.load("ppo_f110", device=device)
-    # Run the final model
     obs = env.reset()
     while True:
         action, _states = model.predict(obs)
@@ -104,4 +96,4 @@ def train(): # args
 
 if __name__ == '__main__':
 
-    train()
+    test()
