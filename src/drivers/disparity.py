@@ -53,7 +53,8 @@ class DisparityExtender:
             Possible Improvements: use a different method to calculate the angle
         """
         angle = 2 * np.arcsin(width / (2 * dist))
-        num_points = int(np.ceil(angle / self.radians_per_point))
+        val = np.ceil(angle / self.radians_per_point)
+        num_points = int(val if val == val else 1)
         return num_points
 
     def cover_points(self, num_points, start_idx, cover_right, ranges):

@@ -36,11 +36,15 @@ from f110_gym.envs.base_classes import Simulator
 import numpy as np
 import os
 import time
+import yaml
+import math
+import concurrent.futures
 
 # gl
 import pyglet
 pyglet.options['debug_gl'] = False
 from pyglet import gl
+from LidarVis import Visualiser, calc_end_pos
 
 # constants
 
@@ -93,20 +97,7 @@ class F110Env(gym.Env, utils.EzPickle):
     metadata = {'render.modes': ['human', 'human_fast']}
 
     def __init__(self, **kwargs):    
-        self.action_space = spaces.Box(low=np.array([-1,0]), high=np.array([1,1]),
-                                            shape=(2,1), dtype=np.flaot32)
-        self.observation_space = spaces.Dict(
-            {
-                "Linear_vels_x": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
-                "Linear_vels_y": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
-                "collisions": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
-                "poses_x": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
-                "poses_y": spaces.Box(-np.inf, np.inf, shape=(1,1),dtype=np.float32),
-                "lap_counts": spaces.Box(0, np.inf, shape=(1,1),dtype=np.int),
-                "lap_times": spaces.Box(0, np.inf, shape=(1,1),dtype=np.float32),
-                #"scans": spaces
-            }
-        )
+        super().__init__()
         # kwargs extraction
         try:
             self.seed = kwargs['seed']
@@ -140,7 +131,7 @@ class F110Env(gym.Env, utils.EzPickle):
         try:
             self.num_agents = kwargs['num_agents']
         except:
-            self.num_agents = 2
+            self.num_agents = 1
 
         try:
             self.timestep = kwargs['timestep']
@@ -152,6 +143,52 @@ class F110Env(gym.Env, utils.EzPickle):
             self.ego_idx = kwargs['ego_idx']
         except:
             self.ego_idx = 0
+        
+        try:
+            self.render_step = kwargs["render_step"]
+        except:
+            self.render_step = False
+
+        try:
+            self.reward_fn = kwargs["reward_fn"]
+        except:
+            self.reward_fn = lambda state, reward : -10 if (self.current_obs['collisions'][self.ego_idx] == 1.0) else reward
+
+        try:
+            self.drivers = kwargs["drivers"]
+            self.num_agents = len(self.drivers)+1
+        except:
+            self.drivers = []
+
+        try:
+            self.lidar_fn = kwargs["lidar_fn"]
+        except:
+            self.lidar_fn = lambda init: init
+        
+        self.action_space = spaces.Box(low=np.array([-1,0]), high=np.array([1,1]), shape=(2,), dtype=np.float32)
+
+        """
+        self.observation_space = spaces.Dict(
+            {
+                "ang_vels_z": spaces.Box(low=-np.inf, high=np.inf, shape=(1,),dtype=np.float32),
+                "collisions": spaces.Box(low=-np.inf, high=np.inf, shape=(1,),dtype=np.float32),
+                "ego_idx": spaces.Discrete(self.num_agents),
+                "lap_counts": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.int),
+                "lap_times": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.float32),
+                "Linear_vels_x": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.float32),
+                "Linear_vels_y": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.float32),
+                "poses_theta": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.int),
+                "poses_x": spaces.Box(low=-np.inf, high=np.inf, shape=(1,),dtype=np.float32),
+                "poses_y": spaces.Box(low=-np.inf, high=np.inf, shape=(1,),dtype=np.float32),
+            }
+        """
+        self.observation_space = spaces.Dict(
+            {
+                "scans": spaces.Box(low=0, high=np.inf, shape=self.lidar_fn(np.zeros((1080,))).shape,dtype=np.float32),
+                "speed": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.float32),
+                "angle": spaces.Box(low=0, high=np.inf, shape=(1,),dtype=np.float32)
+            }
+        )
 
         # radius to consider done
         self.start_thresh = 0.5  # 10cm
@@ -190,6 +227,7 @@ class F110Env(gym.Env, utils.EzPickle):
         # rendering
         self.renderer = None
         self.current_obs = None
+        self.vis = None
 
     def __del__(self):
         """
@@ -237,13 +275,9 @@ class F110Env(gym.Env, utils.EzPickle):
             if self.toggle_list[i] < 4:
                 self.lap_times[i] = self.current_time
         
-        done = np.all(self.toggle_list >= 4)
-        
-        if obs['collisions'].any() :
-            done = True
-        
-        return done, self.toggle_list >= 4
-
+        done = (self.toggle_list[self.ego_idx] >= 4) or (self.current_obs['collisions'][self.ego_idx] == 1.0)
+        return bool(done), self.toggle_list >= 4
+    
     def _update_state(self, obs_dict):
         """
         Update the env's states according to observations
@@ -272,9 +306,28 @@ class F110Env(gym.Env, utils.EzPickle):
             done (bool): if the simulation is done
             info (dict): auxillary information dictionary
         """
-        
+        actions = []
+        if(action.shape == (2,)):
+            action[0] = action[0]*np.pi
+            action[1] = (action[1]+1)*5
+            actions.append(action)
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for i, driver in enumerate(self.drivers):
+                    output = executor.submit(
+                        driver.process_lidar,
+                        self.current_obs['scans'][i+1])
+                    futures.append(output)
+            for future in futures:
+                speed, steer = future.result()
+                # steer  -2 to 2 
+                # speed 0 to 10
+                actions.append([steer, speed])
+            actions = np.array(actions)
+        else:
+            actions = action
         # call simulation step
-        obs = self.sim.step(action)
+        obs = self.sim.step(actions)
         obs['lap_times'] = self.lap_times
         obs['lap_counts'] = self.lap_counts
 
@@ -283,17 +336,27 @@ class F110Env(gym.Env, utils.EzPickle):
         # times
         reward = self.timestep
         self.current_time = self.current_time + self.timestep
-        
+        reward = self.reward_fn(self.current_obs,reward)
         # update data member
         self._update_state(obs)
 
         # check done
         done, toggle_list = self._check_done()
         info = {'checkpoint_done': toggle_list}
+        if self.render_step :
+            self.render("human_fast")
+        return self.proc_obs(obs), reward, done, info
 
-        return obs, reward, done, info
+    def proc_obs(self, obs):
+        velVector = lambda x,y: math.sqrt(x**2+y**2)
+        proc_obs = {
+                    "scans": self.lidar_fn(obs['scans'][self.ego_idx].astype('float32')),
+                    "speed": np.array([velVector(obs['linear_vels_x'][self.ego_idx],obs['linear_vels_y'][self.ego_idx])], dtype=np.float32),
+                    "angle": np.array([obs['ang_vels_z'][self.ego_idx]], dtype=np.float32)
+                    }
+        return proc_obs
 
-    def reset(self, poses):
+    def reset(self):
         """
         Reset the gym environment by given poses
 
@@ -306,6 +369,11 @@ class F110Env(gym.Env, utils.EzPickle):
             done (bool): if the simulation is done
             info (dict): auxillary information dictionary
         """
+        with open(self.map_path) as map_conf_file:
+            map_conf = yaml.load(map_conf_file, Loader=yaml.FullLoader)
+        scale = map_conf['resolution'] / map_conf['default_resolution']
+        starting_angle = map_conf['starting_angle']
+        poses = np.array([[-1.25*scale + (i * 0.75*scale), 0., starting_angle] for i in range(self.num_agents)])
         # reset counters and data members
         self.current_time = 0.0
         self.collisions = np.zeros((self.num_agents, ))
@@ -372,11 +440,15 @@ class F110Env(gym.Env, utils.EzPickle):
             from f110_gym.envs.rendering import EnvRenderer
             self.renderer = EnvRenderer(WINDOW_W, WINDOW_H)
             self.renderer.update_map(self.map_name, self.map_ext)
+            self.vis = Visualiser()
         self.renderer.update_obs(self.current_obs)
         self.renderer.dispatch_events()
         self.renderer.on_draw()
         self.renderer.flip()
+        self.vis.step(self.current_obs["scans"][self.ego_idx])
+
         if mode == 'human':
             time.sleep(0.005)
+            pass
         elif mode == 'human_fast':
             pass
