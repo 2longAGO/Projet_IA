@@ -73,7 +73,15 @@ Test to see if the removal of all backwards is a detriment
 Run 14: (log 23) Increase learning rate value of the critic (0.001) (Seems less finicky in it's decisions)
 Run 15: Adjust sensor data (It figured out that point can be gained from passing a specific line)
 Run 16: Increase learning rate of actor (0.0008)
+
+Run ppo f110: scans rays 17 for track: TRACK_1 150000 steps
+Run ppo f110_1: scans rays 17 for track: OBSTACLES 150000 steps
+Run ppo f110_2: scans rays 17 for track: OBSTACLES  200000 steps
+Run ppo f110_3: scans rays 65 for trck: OBSTACLES 150000 steps
 Increase agent speed backup 
 (TO-DO) Add incentive to go forward
 Idea: return an array of nbRay size with only the longest rays not at 0 and the agent would only need to learn to follow the direction that ray indicates
 Observation génerale la performance est toujours meilleur avec peu de données d'entrée
+
+https://github.com/johschmitz/blender-driving-scenario-creator
+https://stable-baselines3.readthedocs.io/en/master/index.html
