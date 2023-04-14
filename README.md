@@ -20,7 +20,7 @@ Clone this repository. If you don't want to use git, you may alternatively downl
 ```bash
 $ git clone https://github.com/2longAGO/Projet_IA.git
 ```
-
+**Use python 3.9 and pip 3.9 for all the following steps**
 Go into the repository and install the required packages. If you don't want to use the command line to navigate to the repository, you may open the folder in Visual Studio Code or another code editor of your choice. Note: [pip](https://pypi.org/project/pip/) is a package manager for Python packages.
 
 ```bash
