@@ -56,7 +56,7 @@ def reward_fn(state,reward):
     # Give reward for proximity to DisparityExtender
     reward += 2/max(velVector(state['poses_x'][0] - state['poses_x'][1],state['poses_y'][0]-state['poses_y'][1]),2)
     # reduce reward if a collision happens
-    reward -= 75 if state['collisions'].any() == 1.0 else 0
+    reward -= 75 if state['collisions'][0] == 1.0 else 0
     # (TO-DO) Add incentive to go forward
     
     return reward
@@ -89,11 +89,11 @@ def train(): # args
     check_env(env)
     model = PPO("MultiInputPolicy", env, verbose=1, device=device)
     model.learn(total_timesteps=max_training_timesteps)
-    model.save("ppo_f110")
+    model.save("ppo_f110_3")
     print("============================================================================================")
     print("Training complete!")
     print("============================================================================================")
-    model = PPO.load("ppo_f110", device=device)
+    model = PPO.load("ppo_f110_3", device=device)
     # Run the final model
     obs = env.reset()
     while True:
