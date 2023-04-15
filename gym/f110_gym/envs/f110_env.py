@@ -165,7 +165,7 @@ class F110Env(gym.Env, utils.EzPickle):
         except:
             self.lidar_fn = lambda init: init
         
-        self.action_space = spaces.Box(low=np.array([-1,0]), high=np.array([1,1]), shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(low=np.array([-1,-1]), high=np.array([1,1]), shape=(2,), dtype=np.float32)
 
         """
         self.observation_space = spaces.Dict(
