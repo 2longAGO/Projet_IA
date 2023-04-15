@@ -4,5 +4,6 @@ pygame
 pyglet==1.5.11
 numba==0.55
 stable-baselines3
---index-url https://download.pytorch.org/whl/cu117
+#  torch 
+--find-links https://download.pytorch.org/whl/cu117
 torch
