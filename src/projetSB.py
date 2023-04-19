@@ -81,12 +81,13 @@ def test(): # args
     racetrack = "TRACK_2"
     listDrivers = [GapFollower()] # SimpleDriver(),DisparityExtender()
     render = True
+    file_name = "ppo_f110_3"
     #####################################################
 
-    print("training environment name : " + env_name)
+    print("testing environment name : " + env_name)
     env = gym.make('f110_gym:f110-v0', map="maps/{}".format(racetrack), map_ext=".png", render_step=render, reward_fn=reward_fn, lidar_fn=preprocess_lidar, drivers=listDrivers)
     check_env(env)
-    model = PPO.load("ppo_f110", device=device)
+    model = PPO.load(file_name, device=device)
     obs = env.reset()
     while True:
         action, _states = model.predict(obs)

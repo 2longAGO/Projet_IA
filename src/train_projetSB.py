@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 
 import torch
-import yaml
 import numpy as np
 from argparse import Namespace
 
@@ -81,6 +80,7 @@ def train(): # args
     racetrack = "TRACK_1"
     listDrivers = [GapFollower()] # SimpleDriver(),DisparityExtender()
     render = True
+    file_name = "ppo_f110_5"
     max_training_timesteps = 150000  # break training loop if timesteps > max_training_timesteps
     #####################################################
 
@@ -89,11 +89,11 @@ def train(): # args
     check_env(env)
     model = PPO("MultiInputPolicy", env, verbose=1, device=device)
     model.learn(total_timesteps=max_training_timesteps)
-    model.save("ppo_f110_3")
+    model.save(file_name)
     print("============================================================================================")
     print("Training complete!")
     print("============================================================================================")
-    model = PPO.load("ppo_f110_3", device=device)
+    model = PPO.load(file_name, device=device)
     # Run the final model
     obs = env.reset()
     while True:
