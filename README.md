@@ -43,6 +43,29 @@ Then to make sure it's working, go into the src directory and run the simulator
 $ cd src
 $ python simulator.py
 ```
+## train_projetSB.py
+### Parameters
+```python
+    ####### initialize environment hyperparameters ######
+    env_name = 'f110-v0'
+    racetrack = "TRACK_1"
+    listDrivers = [GapFollower()] # SimpleDriver(),DisparityExtender()
+    render = True
+    file_name = "ppo_f110_5"
+    max_training_timesteps = 150000  # break training loop if timesteps > max_training_timesteps
+    #####################################################
+```
+
+## functions 
+```python
+
+  def preprocess_lidar(ranges,nbRays=16):
+    ....
+  
+  def reward_fn(state,reward):
+    ....
+    
+```
 
 ## Making your own Driver
 
@@ -186,15 +209,4 @@ pip install pyglet
 ```
 
 ## Citing
-If you find this Gym environment useful, please consider citing:
-
-```
-@inproceedings{okelly2020f1tenth,
-  title={F1TENTH: An Open-source Evaluation Environment for Continuous Control and Reinforcement Learning},
-  author={O’Kelly, Matthew and Zheng, Hongrui and Karthik, Dhruv and Mangharam, Rahul},
-  booktitle={NeurIPS 2019 Competition and Demonstration Track},
-  pages={77--89},
-  year={2020},
-  organization={PMLR}
-}
-```
+M. O’Kelly, H. Zheng, D. Karthik, and R. Mangharam, “F1TENTH: An Open-source Evaluation Environment for Continuous Control and Reinforcement Learning,” in NeurIPS 2019 Competition and Demonstration Track, 2020, pp. 77–89. 

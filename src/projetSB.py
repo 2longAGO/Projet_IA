@@ -17,6 +17,10 @@ def preprocess_lidar(ranges,nbRays=16):
     """ Any preprocessing of the LiDAR data can be done in this function.
         Possible Improvements: smoothing of outliers in the data and placing
         a cap on the maximum distance a point can be.
+
+        Keyword arguments:
+        ranges -- An array of 1080 float values
+        nbRays -- the number of rays to be given to the agent
     """
     # remove quadrant of LiDAR directly behind us
     # print(type(ranges))
@@ -25,6 +29,23 @@ def preprocess_lidar(ranges,nbRays=16):
     return np.array(buf_ranges[range(0,len(buf_ranges),(len(buf_ranges)//nbRays) if nbRays > 0 else 1)])
 
 def reward_fn(state,reward):
+    """Any processing of the reward of the step based on the state can be done here.
+
+        Keyword arguments:
+        state -- the state of current step  (
+                                             "ang_vels_z": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
+                                             "collisions": spaces.Box(low=0, high=1, shape=(num_agents,),dtype=np.float32),
+                                             "ego_idx": spaces.Discrete(self.num_agents),
+                                             "lap_counts": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.int),
+                                             "lap_times": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
+                                             "Linear_vels_x": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
+                                             "Linear_vels_y": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
+                                             "poses_theta": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.int),
+                                             "poses_x": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
+                                             "poses_y": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32)
+                                            )
+        reward -- the amount of points given on the current step (default points given by the simulator) 
+    """
     # state contains
     # Linear_vels_x Linear_vels_y current speed of each vehicle on the track
     # collisions of each vehicle on the track
@@ -32,18 +53,6 @@ def reward_fn(state,reward):
     # lap_counts number of laps of the circuit
     # lap_times time taken for a lap and current time of the lap
     # We only have 1 vehicle so we get the 0 for the speed of the singular vehicle
-    """
-        "ang_vels_z": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
-        "collisions": spaces.Box(low=0, high=1, shape=(num_agents,),dtype=np.float32),
-        "ego_idx": spaces.Discrete(self.num_agents),
-        "lap_counts": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.int),
-        "lap_times": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
-        "Linear_vels_x": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
-        "Linear_vels_y": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.float32),
-        "poses_theta": spaces.Box(low=0, high=np.inf, shape=(num_agents,),dtype=np.int),
-        "poses_x": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
-        "poses_y": spaces.Box(low=-np.inf, high=np.inf, shape=(num_agents,),dtype=np.float32),
-    """
     # transform the reward based on the current speed of the vehicle
     reward += min(velVector(state['linear_vels_x'][0],state['linear_vels_y'][0]),1)
     # Give reward for proximity to DisparityExtender
